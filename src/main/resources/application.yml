@@ -1,0 +1,78 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: unify-backend
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+      database: ${MONGO_DB_NAME}
+      auto-index-creation: true
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+
+  cache:
+    type: redis
+
+mail:
+  host: ${MAIL_HOST}
+  port: ${MAIL_PORT}
+  username: ${MAIL_USERNAME}
+  password: ${MAIL_PASSWORD}
+  protocol: smtp
+  properties:
+    mail:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
+          required: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+logging:
+  level:
+    org:
+      springframework:
+        boot:
+          autoconfigure: INFO
+
+springdoc:
+  swagger-ui:
+    use-root-path: true
+    persist-authorization: true
+
+var:
+  avatar: https://res.cloudinary.com/daue063lh/image/upload/v1751362512/uploads/ao8cnnbqpztoc1oxnqew.jpg
+
+jwt:
+  signerKey: ${JWT_KEY}
+
+supabase:
+  url: ${SUPABASE_URL}
+  key: ${SUPABASE_KEY}
+
+unify:
+  livekit-host: ${LIVEKIT_HOST}
+  livekit-api-key: ${LIVEKIT_API_KEY}
+  livekit-api-secret: ${LIVEKIT_API_SECRET}
+  livekit-ws-url: ${LIVEKIT_URL}
+  app-uri: ${APP_URI:https://unify.app.com}

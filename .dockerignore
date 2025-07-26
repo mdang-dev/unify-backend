@@ -1,0 +1,33 @@
+# Ignore Maven/Gradle build folders
+target/
+build/
+
+# Ignore temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.DS_Store
+*.idea/
+*.vscode/
+node_modules/
+.env
+.env.*
+
+# Ignore OS or IDE-specific files
+*.iml
+.gradle/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Git-related
+.git
+.gitignore
+
+# Docker-related
+Dockerfile
+docker-compose.yml
+
+# Miscellaneous
+*.class
