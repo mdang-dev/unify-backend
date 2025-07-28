@@ -84,7 +84,7 @@ src/main/java/com/unify/app/
 ├── hashtags/        # Handles hashtag creation, indexing, and retrieval
 │   ├── domain/
 │   └── web/
-├── media/           # Services for media (e.g., video call/stream) uploads and management
+├── media/           # Services for media (e.g., video call/stream)
 │   ├── config/
 │   ├── domain/
 │   └── web/
