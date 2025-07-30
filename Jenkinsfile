@@ -43,7 +43,7 @@ pipeline {
         }
         stage('Build') { 
             steps {
-                sh 'mvn -B -DskipTests clean package' 
+                sh 'mvn -ntp verify' 
             }
         }
         stage('TRIVY FS SCAN') {
