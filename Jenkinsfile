@@ -24,6 +24,11 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/mdang-dev/unify-backend.git'
             }
         }
+        stage('Build') { 
+            steps {
+                sh 'mvn -ntp verify' 
+            }
+        }
         stage('Sonarqube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube-server') {
@@ -39,11 +44,6 @@ pipeline {
                 script {
                     waitForQualityGate abortPipeline: false, credentialsId: 'sonarqube-token'
                 }
-            }
-        }
-        stage('Build') { 
-            steps {
-                sh 'mvn -ntp verify' 
             }
         }
         stage('TRIVY FS SCAN') {
