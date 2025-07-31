@@ -1,5 +1,6 @@
 package com.unify.app.posts.domain.models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.unify.app.hashtags.domain.models.HashtagDetailDto;
 import com.unify.app.users.domain.models.UserDto;
 import java.time.LocalDateTime;

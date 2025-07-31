@@ -28,7 +28,7 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-class Media implements Serializable {
+public class Media implements Serializable {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)

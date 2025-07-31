@@ -26,13 +26,25 @@ public class PostService {
 
   private final PostRepository postRepository;
   private final PostMapper mapper;
+  private final MediaMapper mediaMapper;
   private final HashtagService hashtagService;
+  private final MediaRepository mediaRepository;
 
   @CacheEvict(value = "personalizedFeedCache", allEntries = true)
   public PostDto createPost(PostDto postDTO) {
     Post post = mapper.toPost(postDTO);
-    postRepository.save(post);
-    return mapper.toPostDto(post);
+    Post savedPost = postRepository.save(post);
+
+    // If media is included in the request, create it automatically
+    if (postDTO.getMedia() != null && !postDTO.getMedia().isEmpty()) {
+      for (MediaDto mediaDto : postDTO.getMedia()) {
+        Media media = mediaMapper.toMedia(mediaDto);
+        media.setPost(savedPost);
+        mediaRepository.save(media);
+      }
+    }
+
+    return mapper.toPostDto(savedPost);
   }
 
   public List<PostDto> getAll() {
