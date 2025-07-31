@@ -71,8 +71,8 @@ supabase:
   key: ${SUPABASE_KEY}
 
 unify:
-  livekit-host: ${LIVEKIT_HOST}
+  livekit-host: ${LIVEKIT_HOST:http://localhost:7880}
   livekit-api-key: ${LIVEKIT_API_KEY}
   livekit-api-secret: ${LIVEKIT_API_SECRET}
-  livekit-ws-url: ${LIVEKIT_URL}
+  livekit-ws-url: ${LIVEKIT_URL:ws://localhost:7880}
   app-uri: ${APP_URI:https://unify.app.com}
