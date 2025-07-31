@@ -130,6 +130,7 @@ public class UserService {
 
     User updatedUser = userMapper.toUser(userDto);
     updatedUser.setReportApprovalCount(existingUser.getReportApprovalCount());
+    updatedUser.setPassword(existingUser.getPassword());
     if (updatedUser.getAvatars() != null) {
       Avatar newAvatar = avatarMapper.toAvatar(userDto.avatar());
       newAvatar.setUser(updatedUser);

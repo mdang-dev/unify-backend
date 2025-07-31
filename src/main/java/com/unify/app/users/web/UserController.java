@@ -3,6 +3,7 @@ package com.unify.app.users.web;
 import com.unify.app.users.domain.UserService;
 import com.unify.app.users.domain.models.ShareAbleUserDto;
 import com.unify.app.users.domain.models.UserDto;
+import com.unify.app.users.domain.models.UserReportCountDto;
 import com.unify.app.users.domain.models.auth.CreateUserCmd;
 import java.util.Collections;
 import java.util.List;
@@ -18,10 +19,10 @@ class UserController {
 
   private final UserService userService;
 
-  // @GetMapping
-  // List<UserReportCountDto> getUsers() {
-  // return userService.findAllUserReportCount();
-  // }
+   @GetMapping
+   List<UserReportCountDto> getUsers() {
+   return userService.findAllUserReportCount();
+   }
 
   @GetMapping("/my-info")
   UserDto getMyInfo() {
