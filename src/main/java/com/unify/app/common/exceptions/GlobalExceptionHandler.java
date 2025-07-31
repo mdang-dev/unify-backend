@@ -1,5 +1,6 @@
 package com.unify.app.common.exceptions;
 
+import com.unify.app.reports.domain.ReportException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.time.Instant;
@@ -47,17 +48,61 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return baseUri().resolve("internal-server");
   }
 
+  private URI conflictType() {
+    return baseUri().resolve("conflict");
+  }
+
+  // Xử lý IllegalArgumentException (400 Bad Request)
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ProblemDetail handleIllegalArgumentException(
+      IllegalArgumentException ex, HttpServletRequest request) {
+    log.info("Bad request at [{}]: {}", request.getRequestURI(), ex.getMessage());
+    return buildProblemDetail(
+        HttpStatus.BAD_REQUEST,
+        "Bad Request",
+        ex.getMessage(),
+        badRequestType(),
+        request.getRequestURI(),
+        Map.of("error_category", "Validation"));
+  }
+
+  // Xử lý ReportException (409 Conflict)
+  @ExceptionHandler(ReportException.class)
+  public ProblemDetail handleReportException(ReportException ex, HttpServletRequest request) {
+    log.info("Conflict at [{}]: {}", request.getRequestURI(), ex.getMessage());
+    return buildProblemDetail(
+        HttpStatus.CONFLICT,
+        "Conflict",
+        ex.getMessage(),
+        conflictType(),
+        request.getRequestURI(),
+        Map.of("error_category", "Report"));
+  }
+
+  // Xử lý các ngoại lệ chung (500 Internal Server Error)
   @ExceptionHandler(Exception.class)
   public ProblemDetail handleGenericException(Exception ex, HttpServletRequest request) {
     log.error("Unhandled exception at [{}]: {}", request.getRequestURI(), ex.getMessage(), ex);
     return buildProblemDetail(
         HttpStatus.INTERNAL_SERVER_ERROR,
         "Internal Server Error",
-        ex.getMessage(),
+        "An unexpected error occurred.",
         serverErrorType(),
         request.getRequestURI(),
         Map.of("error_category", "Generic"));
   }
+
+  //  @ExceptionHandler(Exception.class)
+  //  public ProblemDetail handleGenericException(Exception ex, HttpServletRequest request) {
+  //    log.error("Unhandled exception at [{}]: {}", request.getRequestURI(), ex.getMessage(), ex);
+  //    return buildProblemDetail(
+  //        HttpStatus.INTERNAL_SERVER_ERROR,
+  //        "Internal Server Error",
+  //        ex.getMessage(),
+  //        serverErrorType(),
+  //        request.getRequestURI(),
+  //        Map.of("error_category", "Generic"));
+  //  }
 
   @ExceptionHandler(ResourceNotFoundException.class)
   public ProblemDetail handleNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
