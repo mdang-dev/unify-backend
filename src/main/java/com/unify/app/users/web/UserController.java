@@ -19,10 +19,10 @@ class UserController {
 
   private final UserService userService;
 
-   @GetMapping
-   List<UserReportCountDto> getUsers() {
-   return userService.findAllUserReportCount();
-   }
+  @GetMapping
+  List<UserReportCountDto> getUsers() {
+    return userService.findAllUserReportCount();
+  }
 
   @GetMapping("/my-info")
   UserDto getMyInfo() {
