@@ -15,20 +15,4 @@ class TestController {
     public String getTest1() {
         return "Hi 2";
     }
-
-    @GetMapping("/test-3")
-    public String getTest2() {
-        return "Hi 3";
-    }
-
-    @GetMapping("/test-4")
-    p
-
-    public String getTest4() {
-        return "Hi 3";
-    }
-
-    @GetMapping("/test-6")
-    public String getTest5() {
-        return "Hi 4";}
 }
