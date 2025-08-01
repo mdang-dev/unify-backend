@@ -22,11 +22,13 @@ class TestController {
     }
 
     @GetMapping("/test-4")
-    public String getTest3() {
-        return "Hi 3";
-    }
-    @GetMapping("/test-5")
+    p
+
     public String getTest4() {
         return "Hi 3";
     }
+
+    @GetMapping("/test-6")
+    public String getTest5() {
+        return "Hi 4";}
 }
