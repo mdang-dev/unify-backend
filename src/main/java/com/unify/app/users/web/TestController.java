@@ -1,7 +1,7 @@
 package com.unify.app.users.web;
 
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 class TestController {
@@ -21,4 +21,8 @@ class TestController {
         return "Hi 3";
     }
 
+    @GetMapping("/test-4")
+    public String getTest3() {
+        return "Hi 3";
+    }
 }
