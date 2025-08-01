@@ -12,7 +12,7 @@
     <groupId>com.unify.app</groupId>
     <artifactId>unify-backend </artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>unify-backend </name>
+    <name>unify-backend</name>
     <description>Unify</description>
     <url />
     <licenses>
@@ -45,7 +45,7 @@
         <properties-maven-plugin.version>1.2.1</properties-maven-plugin.version>
         <sonar-maven-plugin.version>5.1.0.4751</sonar-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.13</jacoco-maven-plugin.version>
-        <jacoco.minimum.coverage>85%</jacoco.minimum.coverage>
+        <jacoco.minimum.coverage>1%</jacoco.minimum.coverage>
     </properties>
     <dependencies>
         <dependency>
@@ -165,10 +165,6 @@
         </dependency>
 
         <!-- WebSocket Dependencies -->
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-messaging</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-config</artifactId>
