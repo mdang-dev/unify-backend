@@ -52,7 +52,7 @@ public class SavedPostService {
 
   public List<SavedPostDto> getSavedPostsByUsername(String username) {
     User user = userService.findUserByUsername(username);
-    return savedPostRepository.findByUserIdOrderBySavedAtDesc(user.getId()).stream()
+    return savedPostRepository.findPublicSavedPostsByUserIdOrderBySavedAtDesc(user.getId()).stream()
         .map(savedPostMapper::toSavedPostDTO)
         .collect(Collectors.toList());
   }

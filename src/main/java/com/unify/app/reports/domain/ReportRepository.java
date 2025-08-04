@@ -40,7 +40,7 @@ interface ReportRepository extends JpaRepository<Report, String> {
   @Query(
       "SELECT r FROM Report r "
           + "JOIN Post p ON r.reportedId = p.id "
-          + "WHERE r.entityType = :entityType AND p.user.id = :userId")
+          + "WHERE r.entityType = :entityType AND r.status = 1 AND p.user.id = :userId ORDER BY r.reportedAt DESC")
   List<Report> findReportsOfPostsOwnedByUser(
       @Param("entityType") EntityType entityType, @Param("userId") String userId);
 }

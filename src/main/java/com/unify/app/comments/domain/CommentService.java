@@ -26,9 +26,9 @@ public class CommentService {
   /**
    * Save a comment to a post.
    *
-   * @param userId   ID of the user writing the comment
-   * @param postId   ID of the post to comment on
-   * @param content  Comment content
+   * @param userId ID of the user writing the comment
+   * @param postId ID of the post to comment on
+   * @param content Comment content
    * @param parentId ID of the parent comment (for replies), can be null
    * @return Saved PostComment entity
    */
@@ -51,22 +51,24 @@ public class CommentService {
 
     Comment parent = null;
     if (parentId != null && !parentId.isEmpty()) {
-      parent = commentRepository
-          .findById(parentId)
-          .orElseThrow(() -> new IllegalArgumentException("Parent comment not found"));
+      parent =
+          commentRepository
+              .findById(parentId)
+              .orElseThrow(() -> new IllegalArgumentException("Parent comment not found"));
 
       if (parent.getStatus() == 2) {
         throw new IllegalArgumentException("Cannot reply to a hidden comment");
       }
     }
 
-    Comment newComment = Comment.builder()
-        .user(user)
-        .post(post)
-        .content(content)
-        .parent(parent)
-        .status(0) // Default to visible
-        .build();
+    Comment newComment =
+        Comment.builder()
+            .user(user)
+            .post(post)
+            .content(content)
+            .parent(parent)
+            .status(0) // Default to visible
+            .build();
 
     Comment savedComment = commentRepository.save(newComment);
     log.info("Saved comment with ID: {}", savedComment.getId());
@@ -74,8 +76,7 @@ public class CommentService {
   }
 
   /**
-   * Get top-level comments for a post (status = 0 only). Replies will be nested
-   * under each
+   * Get top-level comments for a post (status = 0 only). Replies will be nested under each
    * top-level comment.
    *
    * @param postId ID of the post
@@ -93,10 +94,12 @@ public class CommentService {
     List<Comment> allComments = commentRepository.findAllCommentsByPostIdAndStatus(postId, 0);
 
     // Extract root (top-level) comments
-    List<Comment> rootComments = allComments.stream().filter(c -> c.getParent() == null).collect(Collectors.toList());
+    List<Comment> rootComments =
+        allComments.stream().filter(c -> c.getParent() == null).collect(Collectors.toList());
 
     // Map each comment ID to its Comment object
-    Map<String, Comment> commentMap = allComments.stream().collect(Collectors.toMap(Comment::getId, c -> c));
+    Map<String, Comment> commentMap =
+        allComments.stream().collect(Collectors.toMap(Comment::getId, c -> c));
 
     // Set replies for each comment
     for (Comment comment : allComments) {
@@ -147,9 +150,10 @@ public class CommentService {
    * @param commentId ID of the comment to delete
    */
   public void deleteCommentById(String commentId) {
-    Comment comment = commentRepository
-        .findById(commentId)
-        .orElseThrow(() -> new IllegalArgumentException("Comment not found"));
+    Comment comment =
+        commentRepository
+            .findById(commentId)
+            .orElseThrow(() -> new IllegalArgumentException("Comment not found"));
 
     if (comment.getStatus() == 2) {
       log.warn("Deleting hidden comment with ID: {}", commentId);
