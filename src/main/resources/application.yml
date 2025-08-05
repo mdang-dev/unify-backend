@@ -68,7 +68,7 @@ var:
   avatar: https://res.cloudinary.com/daue063lh/image/upload/v1751362512/uploads/ao8cnnbqpztoc1oxnqew.jpg
 
 jwt:
-  signerKey: ${JWT_KEY}
+  signerKey: ${JWT_KEY:default}
 
 unify:
   livekit-host: ${LIVEKIT_HOST:http://localhost:7880}
