@@ -27,7 +27,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD}
+      password: ${REDIS_PASSWORD:default}
 
   cache:
     type: redis
@@ -35,8 +35,8 @@ spring:
 mail:
   host: ${MAIL_HOST:smtp.gmail.com}
   port: ${MAIL_PORT:587}
-  username: ${MAIL_USERNAME}
-  password: ${MAIL_PASSWORD}
+  username: ${MAIL_USERNAME:default}
+  password: ${MAIL_PASSWORD:default}
   protocol: smtp
   properties:
     mail:
@@ -72,7 +72,7 @@ jwt:
 
 unify:
   livekit-host: ${LIVEKIT_HOST:http://localhost:7880}
-  livekit-api-key: ${LIVEKIT_API_KEY}
-  livekit-api-secret: ${LIVEKIT_API_SECRET}
+  livekit-api-key: ${LIVEKIT_API_KEY:default}
+  livekit-api-secret: ${LIVEKIT_API_SECRET:default}
   livekit-ws-url: ${LIVEKIT_URL:ws://localhost:7880}
   app-uri: ${APP_URI:https://unifyapp.com}
