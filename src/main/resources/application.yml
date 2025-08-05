@@ -76,3 +76,4 @@ unify:
   livekit-api-secret: ${LIVEKIT_API_SECRET:default}
   livekit-ws-url: ${LIVEKIT_URL:ws://localhost:7880}
   app-uri: ${APP_URI:https://unifyapp.com}
+  trigger: true
