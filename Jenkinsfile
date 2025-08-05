@@ -27,7 +27,7 @@ pipeline {
         }
         stage('Build') { 
             steps {
-                sh 'mvn -ntp clean verify' 
+                sh 'mvn -ntp verify' 
             }
         }
         stage('Sonarqube Analysis') {
