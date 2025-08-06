@@ -126,4 +126,50 @@ class PostController {
     List<PostDto> posts = postService.getRecommendedPostsForExplore(userId);
     return ResponseEntity.ok(posts);
   }
+
+  @GetMapping("/filter")
+  public ResponseEntity<Page<PostDto>> getPostsWithFilters(
+      @RequestParam(required = false) String captions,
+      @RequestParam(required = false) Integer status,
+      @RequestParam(required = false) Audience audience,
+      @RequestParam(required = false) String postedAt,
+      @RequestParam(required = false) Boolean isCommentVisible,
+      @RequestParam(required = false) Boolean isLikeVisible,
+      @RequestParam(required = false) Long commentCount,
+      @RequestParam(required = false, defaultValue = "=") String commentCountOperator,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size) {
+
+    LocalDateTime postedAtDateTime = null;
+    if (postedAt != null && !postedAt.isEmpty()) {
+      try {
+        postedAtDateTime =
+            LocalDateTime.parse(postedAt, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+      } catch (Exception e) {
+        // If parsing fails, try date only format
+        try {
+          LocalDate date = LocalDate.parse(postedAt, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+          postedAtDateTime = date.atStartOfDay();
+        } catch (Exception ex) {
+          // If both parsing attempts fail, leave as null
+        }
+      }
+    }
+
+    Page<PostDto> postPage =
+        postService.getPostsWithFilters(
+            captions,
+            status,
+            audience,
+            postedAtDateTime,
+            isCommentVisible,
+            isLikeVisible,
+            null, // hashtags - not implemented in this version
+            commentCount,
+            commentCountOperator,
+            page,
+            size);
+
+    return ResponseEntity.ok(postPage);
+  }
 }

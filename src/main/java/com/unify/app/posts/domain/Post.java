@@ -44,6 +44,7 @@ public class Post implements Serializable {
   @GeneratedValue(strategy = GenerationType.UUID)
   String id;
 
+  @Column(columnDefinition = "TEXT")
   String captions;
 
   // 0 -> hidden

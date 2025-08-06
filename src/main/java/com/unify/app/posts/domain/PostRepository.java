@@ -185,4 +185,59 @@ interface PostRepository extends JpaRepository<Post, String> {
                 WHERE m.mediaType = 'VIDEO' AND p.status != 2
             """)
   Page<Object[]> findReelsPostsWithCommentCount(Pageable pageable);
+
+  @Query(
+      value =
+          """
+                SELECT p.* FROM Posts p
+                LEFT JOIN comments c ON p.id = c.post_id
+                WHERE (:captions IS NULL OR LOWER(CAST(p.captions AS TEXT)) LIKE LOWER(CONCAT('%', :captions, '%')))
+                AND (:status IS NULL OR p.status = :status)
+                AND (:audience IS NULL OR p.audience = :audience)
+                AND (:postedAt IS NULL OR DATE(p.posted_at) = DATE(:postedAt))
+                AND (:isCommentVisible IS NULL OR p.is_comment_visible = :isCommentVisible)
+                AND (:isLikeVisible IS NULL OR p.is_like_visible = :isLikeVisible)
+                GROUP BY p.id, p.captions, p.status, p.audience, p.posted_at, p.is_comment_visible, p.is_like_visible, p.updated_at, p.user_id
+                HAVING (:commentCount IS NULL OR
+                    CASE
+                        WHEN :commentCountOperator = '>' THEN COUNT(c.id) > :commentCount
+                        WHEN :commentCountOperator = '<' THEN COUNT(c.id) < :commentCount
+                        WHEN :commentCountOperator = '=' THEN COUNT(c.id) = :commentCount
+                        WHEN :commentCountOperator = '>=' THEN COUNT(c.id) >= :commentCount
+                        WHEN :commentCountOperator = '<=' THEN COUNT(c.id) <= :commentCount
+                        ELSE TRUE
+                    END)
+                ORDER BY p.posted_at DESC
+                LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}
+            """,
+      countQuery =
+          """
+                SELECT COUNT(DISTINCT p.id) FROM Posts p
+                WHERE (:captions IS NULL OR LOWER(CAST(p.captions AS TEXT)) LIKE LOWER(CONCAT('%', :captions, '%')))
+                AND (:status IS NULL OR p.status = :status)
+                AND (:audience IS NULL OR p.audience = :audience)
+                AND (:postedAt IS NULL OR DATE(p.posted_at) = DATE(:postedAt))
+                AND (:isCommentVisible IS NULL OR p.is_comment_visible = :isCommentVisible)
+                AND (:isLikeVisible IS NULL OR p.is_like_visible = :isLikeVisible)
+                AND (:commentCount IS NULL OR
+                    CASE
+                        WHEN :commentCountOperator = '>' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) > :commentCount
+                        WHEN :commentCountOperator = '<' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) < :commentCount
+                        WHEN :commentCountOperator = '=' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) = :commentCount
+                        WHEN :commentCountOperator = '>=' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) >= :commentCount
+                        WHEN :commentCountOperator = '<=' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) <= :commentCount
+                        ELSE TRUE
+                    END)
+            """,
+      nativeQuery = true)
+  Page<Object[]> findPostsWithFilters(
+      @Param("captions") String captions,
+      @Param("status") Integer status,
+      @Param("audience") Audience audience,
+      @Param("postedAt") LocalDateTime postedAt,
+      @Param("isCommentVisible") Boolean isCommentVisible,
+      @Param("isLikeVisible") Boolean isLikeVisible,
+      @Param("commentCount") Long commentCount,
+      @Param("commentCountOperator") String commentCountOperator,
+      Pageable pageable);
 }
