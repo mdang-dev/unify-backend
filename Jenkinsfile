@@ -6,7 +6,7 @@ pipeline {
     }
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
-        APP_NAME = "unify-backend"
+        APP_NAME = "unify-backend-pipeline"
         RELEASE = "1.0.0"
         DOCKER_USER = "minhdangdev"
         DOCKER_PASS = "dockerhub"
