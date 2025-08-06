@@ -46,6 +46,7 @@
         <sonar-maven-plugin.version>5.1.0.4751</sonar-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.13</jacoco-maven-plugin.version>
         <jacoco.minimum.coverage>1%</jacoco.minimum.coverage>
+        <mockito.inline.mockmaker>true</mockito.inline.mockmaker>
     </properties>
     <dependencies>
         <dependency>
@@ -365,6 +366,19 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>
+                        -XX:+EnableDynamicAgentLoading
+                        -Djdk.instrument.traceUsage
+                    </argLine>
+                    <systemPropertyVariables>
+                        <mockito.inline.mockmaker>true</mockito.inline.mockmaker>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>

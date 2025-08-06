@@ -128,7 +128,7 @@ class PostController {
   }
 
   @GetMapping("/filter")
-  public ResponseEntity<PostFeedResponse> getPostsWithFilters(
+  public ResponseEntity<Page<PostDto>> getPostsWithFilters(
       @RequestParam(required = false) String captions,
       @RequestParam(required = false) Integer status,
       @RequestParam(required = false) Audience audience,
@@ -170,9 +170,6 @@ class PostController {
             page,
             size);
 
-    PostFeedResponse response =
-        new PostFeedResponse(postPage.getContent(), postPage.hasNext(), postPage.getNumber());
-
-    return ResponseEntity.ok(response);
+    return ResponseEntity.ok(postPage);
   }
 }

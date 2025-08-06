@@ -19,83 +19,79 @@ This endpoint allows filtering posts based on multiple criteria with pagination 
 | `audience`             | String  | No       | Filter by audience type:<br/>PUBLIC<br/>PRIVATE                                                         | `PUBLIC`                              |
 | `postedAt`             | String  | No       | Filter by specific posted date/time. Supports formats:<br/>- `yyyy-MM-dd'T'HH:mm:ss`<br/>- `yyyy-MM-dd` | `2024-01-15T10:30:00` or `2024-01-15` |
 | `isCommentVisible`     | Boolean | No       | Filter posts by comment visibility                                                                      | `true`                                |
-| `isLikeVisible`        | Boolean | No       | Filter posts by like visibility (default: false)                                                        | `false`                               |
-| `commentCount`         | Long    | No       | Filter by comment count comparison                                                                      | `5`                                   |
-| `commentCountOperator` | String  | No       | Comparison operator for comment count (default: "=")<br/>Supported: `>`, `<`, `=`, `>=`, `<=`           | `>`                                   |
+| `isLikeVisible`        | Boolean | No       | Filter posts by like visibility                                                                         | `false`                               |
+| `commentCount`         | Long    | No       | Filter by comment count comparison                                                                      | `10`                                  |
+| `commentCountOperator` | String  | No       | Comparison operator for comment count:<br/>`>`, `<`, `=`, `>=`, `<=`                                    | `>`                                   |
 
 ### Pagination Parameters
 
 | Parameter | Type    | Required | Default | Description              |
 | --------- | ------- | -------- | ------- | ------------------------ |
-| `page`    | Integer | No       | 0       | Page number (0-based)    |
-| `size`    | Integer | No       | 10      | Number of items per page |
+| `page`    | Integer | No       | `0`     | Page number (0-based)    |
+| `size`    | Integer | No       | `10`    | Number of items per page |
 
 ## Response Format
 
 ```json
 {
-  "posts": [
+  "content": [
     {
       "id": "post-id",
       "captions": "Post content",
       "status": 1,
       "audience": "PUBLIC",
-      "user": {
-        "id": "user-id",
-        "firstName": "John",
-        "lastName": "Doe",
-        "username": "johndoe"
-      },
       "postedAt": "2024-01-15T10:30:00",
       "isCommentVisible": true,
       "isLikeVisible": false,
-      "media": [],
-      "hashtags": [],
-      "commentCount": 5
+      "commentCount": 5,
+      "media": [...],
+      "user": {...}
     }
   ],
-  "hasNext": true,
-  "page": 0
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 10,
+    "sort": {...}
+  },
+  "totalElements": 100,
+  "totalPages": 10,
+  "last": false,
+  "first": true,
+  "numberOfElements": 10,
+  "empty": false
 }
 ```
 
-## Usage Examples
+## Example Requests
 
-### Filter by captions
-
-```
-GET /posts/filter?captions=hello&page=0&size=10
-```
-
-### Filter by status and audience
+### Basic Filtering
 
 ```
-GET /posts/filter?status=1&audience=PUBLIC&page=0&size=10
+GET /posts/filter?captions=hello&status=1&page=0&size=5
 ```
 
-### Filter by date range
+### Advanced Filtering with Pagination
+
+```
+GET /posts/filter?audience=PUBLIC&isCommentVisible=true&commentCount=5&commentCountOperator=>&page=1&size=20
+```
+
+### Date Filtering
 
 ```
 GET /posts/filter?postedAt=2024-01-15&page=0&size=10
 ```
 
-### Filter by comment count
-
-```
-GET /posts/filter?commentCount=5&commentCountOperator=>&page=0&size=10
-```
-
-### Combined filters
-
-```
-GET /posts/filter?captions=hello&status=1&audience=PUBLIC&isCommentVisible=true&commentCount=5&commentCountOperator=>=&page=0&size=10
-```
-
 ## Notes
 
-- All filter parameters are optional
-- When a parameter is not provided, it won't be applied to the filter
-- The response is paginated and ordered by `postedAt` in descending order
-- Hashtag filtering is not implemented in this version (parameter is ignored)
-- Date filtering supports both full datetime and date-only formats
-- Comment count filtering uses SQL aggregation with HAVING clause
+- **Pagination**: The API now properly supports pagination with `LIMIT` and `OFFSET` clauses in the SQL query
+- **Default Values**: If no pagination parameters are provided, defaults to page 0 with 10 items
+- **Filter Combination**: All filters can be used individually or in combination
+- **Case Insensitive**: Caption filtering is case-insensitive
+- **Null Handling**: All filter parameters are optional and will be ignored if null
+
+## Recent Fixes
+
+- ✅ **Fixed Pagination Issue**: Added `LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}` to the native SQL query
+- ✅ **PostgreSQL Compatibility**: Fixed `bytea` type issue by using `CAST(p.captions AS TEXT)`
+- ✅ **Proper Type Handling**: Ensured all database fields are properly typed for PostgreSQL

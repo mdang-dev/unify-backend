@@ -208,25 +208,24 @@ interface PostRepository extends JpaRepository<Post, String> {
                         ELSE TRUE
                     END)
                 ORDER BY p.posted_at DESC
+                LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}
             """,
       countQuery =
           """
                 SELECT COUNT(DISTINCT p.id) FROM Posts p
-                LEFT JOIN comments c ON p.id = c.post_id
                 WHERE (:captions IS NULL OR LOWER(CAST(p.captions AS TEXT)) LIKE LOWER(CONCAT('%', :captions, '%')))
                 AND (:status IS NULL OR p.status = :status)
                 AND (:audience IS NULL OR p.audience = :audience)
                 AND (:postedAt IS NULL OR DATE(p.posted_at) = DATE(:postedAt))
                 AND (:isCommentVisible IS NULL OR p.is_comment_visible = :isCommentVisible)
                 AND (:isLikeVisible IS NULL OR p.is_like_visible = :isLikeVisible)
-                GROUP BY p.id
-                HAVING (:commentCount IS NULL OR
+                AND (:commentCount IS NULL OR
                     CASE
-                        WHEN :commentCountOperator = '>' THEN COUNT(c.id) > :commentCount
-                        WHEN :commentCountOperator = '<' THEN COUNT(c.id) < :commentCount
-                        WHEN :commentCountOperator = '=' THEN COUNT(c.id) = :commentCount
-                        WHEN :commentCountOperator = '>=' THEN COUNT(c.id) >= :commentCount
-                        WHEN :commentCountOperator = '<=' THEN COUNT(c.id) <= :commentCount
+                        WHEN :commentCountOperator = '>' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) > :commentCount
+                        WHEN :commentCountOperator = '<' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) < :commentCount
+                        WHEN :commentCountOperator = '=' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) = :commentCount
+                        WHEN :commentCountOperator = '>=' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) >= :commentCount
+                        WHEN :commentCountOperator = '<=' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) <= :commentCount
                         ELSE TRUE
                     END)
             """,
