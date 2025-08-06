@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +22,8 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
+  private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
   private final UserRepository userRepository;
   private final RoleRepository roleRepository;
@@ -51,23 +55,47 @@ public class UserService {
   }
 
   public UserDto createUser(CreateUserCmd userDto) {
-    User user = userMapper.toUser(userDto);
-    user.setPassword(encryptPassword(userDto.password()));
-    if (user.getReportApprovalCount() == null) {
-      user.setReportApprovalCount(0);
-    }
-    Role role =
-        roleRepository
-            .findByName("USER")
-            .orElseThrow(() -> new RuntimeException("Role not found !"));
-    user.setRoles(Collections.singleton(role));
+    try {
+      User user = userMapper.toUser(userDto);
+      user.setPassword(encryptPassword(userDto.password()));
+      user.setStatus(0); // Set default status to normal
+      if (user.getReportApprovalCount() == null) {
+        user.setReportApprovalCount(0);
+      }
+      Role role =
+          roleRepository
+              .findByName("USER")
+              .orElseThrow(() -> new RuntimeException("Role not found !"));
+      user.setRoles(Collections.singleton(role));
 
-    Avatar avatar = Avatar.builder().url(avatarUrl).user(user).build();
-    user.setAvatars(Set.of());
-    avatarRepository.save(avatar);
-    User savedUser = userRepository.save(userMapper.toUser(userDto));
-    // streamService.createInitStream(user.getUsername(), user);
-    return userMapper.toUserDTO(user);
+      // Save the user first
+      User savedUser = userRepository.save(user);
+
+      // Create and save avatar with error handling
+      try {
+        Avatar avatar =
+            Avatar.builder()
+                .url(avatarUrl != null ? avatarUrl : "https://via.placeholder.com/150")
+                .user(savedUser)
+                .build();
+        avatarRepository.save(avatar);
+
+        // Update user with avatar
+        savedUser.setAvatars(Set.of(avatar));
+        savedUser = userRepository.save(savedUser);
+      } catch (Exception avatarError) {
+        log.warn(
+            "Avatar creation failed for user {}, but user was saved: {}",
+            savedUser.getUsername(),
+            avatarError.getMessage());
+        // User is already saved, continue without avatar
+      }
+
+      return userMapper.toUserDTO(savedUser);
+    } catch (Exception e) {
+      log.error("Error creating user: {}", e.getMessage(), e);
+      throw new RuntimeException("Failed to create user: " + e.getMessage(), e);
+    }
   }
 
   public boolean existsByEmail(String email) {

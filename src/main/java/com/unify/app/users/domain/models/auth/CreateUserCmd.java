@@ -9,4 +9,5 @@ public record CreateUserCmd(
     String phone,
     String email,
     String password,
-    LocalDate birthDay) {}
+    LocalDate birthDay,
+    Boolean gender) {}

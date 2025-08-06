@@ -51,7 +51,7 @@ public class User implements Serializable {
   @Column(name = "user_name", nullable = false, unique = true)
   String username;
 
-  @Column(nullable = false)
+  @Column(nullable = true, unique = true)
   String phone;
 
   @Column(nullable = false, unique = true)
@@ -75,11 +75,12 @@ public class User implements Serializable {
   LocalDate birthDay;
 
   String location;
+
   String education;
 
+  // status = 0; Bình thường
   // status = 1; Khóa tạm thời
   // status = 2; Khóa vĩnh viễn
-  // status = 0; Bình thường
   @Column(nullable = false)
   Integer status;
 

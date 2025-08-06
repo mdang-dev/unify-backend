@@ -55,13 +55,24 @@ class AuthController {
 
   @PostMapping("/register")
   ResponseEntity<String> register(@RequestBody @Valid CreateUserCmd cmd) {
-    if (userService.existsByEmail(cmd.email())) {
-      return new ResponseEntity<>("Email is taken !", HttpStatus.BAD_REQUEST);
-    } else if (userService.existsByUsername(cmd.username())) {
-      return new ResponseEntity<>("Username is taken !", HttpStatus.BAD_REQUEST);
-    } else {
-      userService.createUser(cmd);
-      return new ResponseEntity<>("Register successfully !", HttpStatus.CREATED);
+    try {
+      log.info("Registration attempt for user: {}", cmd.username());
+
+      if (userService.existsByEmail(cmd.email())) {
+        log.warn("Registration failed - email already taken: {}", cmd.email());
+        return new ResponseEntity<>("Email is taken !", HttpStatus.BAD_REQUEST);
+      } else if (userService.existsByUsername(cmd.username())) {
+        log.warn("Registration failed - username already taken: {}", cmd.username());
+        return new ResponseEntity<>("Username is taken !", HttpStatus.BAD_REQUEST);
+      } else {
+        userService.createUser(cmd);
+        log.info("User registered successfully: {}", cmd.username());
+        return new ResponseEntity<>("Register successfully !", HttpStatus.CREATED);
+      }
+    } catch (Exception e) {
+      log.error("Registration error for user {}: {}", cmd.username(), e.getMessage(), e);
+      return new ResponseEntity<>(
+          "Registration failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
