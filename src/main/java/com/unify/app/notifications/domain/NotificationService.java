@@ -120,6 +120,21 @@ public class NotificationService {
     notificationRepository.saveAll(notifications);
   }
 
+  public void markAsRead(String notificationId, String receiverId) {
+    Notification notification =
+        notificationRepository
+            .findById(notificationId)
+            .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
+
+    // Verify the notification belongs to the user
+    if (!notification.getReceiver().equals(receiverId)) {
+      throw new IllegalArgumentException("Notification does not belong to user");
+    }
+
+    notification.setRead(true);
+    notificationRepository.save(notification);
+  }
+
   private String generateMessage(String senderId, NotificationType type) {
     return switch (type) {
       case FOLLOW -> senderId + " is following you.";

@@ -22,7 +22,10 @@ interface MessageRepository extends MongoRepository<Message, String> {
             + "_id: { $cond: [ { $eq: [ '$sender', ?0 ] }, '$receiver', '$sender' ] }, "
             + "lastMessage: { $first: '$content' }, "
             + "lastMessageTime: { $first: '$timestamp' } "
-            + "} }"
+            + "} }",
+        "{ $match: { _id: { $ne: null } } }", // Filter out null _id values
+        "{ $match: { _id: { $ne: '' } } }", // Filter out empty _id values
+        "{ $match: { _id: { $exists: true } } }" // Ensure _id exists
       })
   List<ChatPreviewProjection> findChatList(String userId);
 }

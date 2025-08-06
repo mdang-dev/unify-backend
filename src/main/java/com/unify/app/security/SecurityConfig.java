@@ -1,6 +1,5 @@
 package com.unify.app.security;
 
-import java.util.Collections;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -92,9 +91,40 @@ public class SecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
 
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(Collections.singletonList("*"));
-    configuration.setAllowedMethods(Collections.singletonList("*"));
-    configuration.setAllowedHeaders(List.of(HttpHeaders.AUTHORIZATION, HttpHeaders.CONTENT_TYPE));
+
+    // Thay vì sử dụng wildcard *, chỉ định các origin cụ thể
+    configuration.setAllowedOriginPatterns(
+        List.of(
+            "http://localhost:3000", // Frontend development
+            "http://localhost:3001", // Frontend alternative port
+            "https://unify.qzz.io", // Production domain
+            "https://*.unify.qzz.io" // Subdomains
+            ));
+
+    // Cho phép credentials (cookies, authorization headers)
+    configuration.setAllowCredentials(true);
+
+    // Các HTTP methods được phép
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+
+    // Các headers được phép
+    configuration.setAllowedHeaders(
+        List.of(
+            HttpHeaders.AUTHORIZATION,
+            HttpHeaders.CONTENT_TYPE,
+            HttpHeaders.ACCEPT,
+            HttpHeaders.ORIGIN,
+            "X-Requested-With",
+            "token" // Cho WebSocket authentication
+            ));
+
+    // Headers mà client có thể đọc
+    configuration.setExposedHeaders(
+        List.of(HttpHeaders.AUTHORIZATION, "X-Total-Count", "X-Page-Count"));
+
+    // Thời gian cache preflight requests (1 giờ)
+    configuration.setMaxAge(3600L);
+
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;

@@ -52,12 +52,26 @@ management:
       exposure:
         include: "*"
 
+  websocket:
+    max-text-message-size: 131072 # ✅ PERFORMANCE: 128KB - Doubled for faster message transfer
+    max-binary-message-size: 131072 # ✅ PERFORMANCE: 128KB - Doubled for faster file transfer
+    max-sessions: 20000 # ✅ PERFORMANCE: Doubled for higher concurrency
+    max-sessions-per-user: 20 # ✅ PERFORMANCE: Doubled for better user experience
+
 logging:
   level:
     org:
       springframework:
         boot:
           autoconfigure: INFO
+        web:
+          socket: INFO
+        messaging: INFO
+    com:
+      unify:
+        app:
+          ws: DEBUG
+          messages: INFO
 
 springdoc:
   swagger-ui:

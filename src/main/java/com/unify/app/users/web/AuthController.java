@@ -74,6 +74,13 @@ class AuthController {
     return ResponseEntity.status(200).body(new TokenResponse(token));
   }
 
+  @GetMapping("/csrf")
+  ResponseEntity<Map<String, String>> getCsrfToken(HttpServletRequest request) {
+    // Generate a simple CSRF token for WebSocket connections
+    String csrfToken = java.util.UUID.randomUUID().toString();
+    return ResponseEntity.ok(Map.of("token", csrfToken));
+  }
+
   @PostMapping("/change-password")
   public ResponseEntity<?> changePassword(
       @RequestBody UserDto userDto, HttpServletRequest request) {
