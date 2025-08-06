@@ -139,7 +139,6 @@ public class MessageService {
   private List<ChatDto> buildChatDtos(List<ChatPreviewProjection> rawList) {
     // ✅ FIX: Enhanced validation and error handling
     if (rawList == null) {
-      System.err.println("Warning: rawList is null");
       return List.of();
     }
 
@@ -150,11 +149,9 @@ public class MessageService {
           .sorted(
               Comparator.comparing(
                       ChatDto::getLastMessageTime, Comparator.nullsLast(LocalDateTime::compareTo))
-                  .reversed())
+                  .reversed()) // Newest first
           .collect(Collectors.toList());
     } catch (Exception e) {
-      System.err.println("Error in buildChatDtos: " + e.getMessage());
-      e.printStackTrace();
       return List.of();
     }
   }
