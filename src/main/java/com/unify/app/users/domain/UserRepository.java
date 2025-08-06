@@ -2,8 +2,10 @@ package com.unify.app.users.domain;
 
 import com.unify.app.users.domain.models.UserReportCountDto;
 import jakarta.transaction.Transactional;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -158,4 +160,24 @@ interface UserRepository extends JpaRepository<User, String> {
                         )
                         """)
   List<User> findMutualFollowingUsers(@Param("myId") String myId);
+
+  // == Filter Users by Multiple Criteria with Pagination ==
+  @Query(
+      """
+                        SELECT u FROM User u
+                        WHERE (:birthDay IS NULL OR u.birthDay = :birthDay)
+                        AND (:email IS NULL OR u.email LIKE %:email%)
+                        AND (:status IS NULL OR u.status = :status)
+                        AND (:username IS NULL OR u.username LIKE %:username%)
+                        AND (:firstName IS NULL OR u.firstName LIKE %:firstName%)
+                        AND (:lastName IS NULL OR u.lastName LIKE %:lastName%)
+                        """)
+  Page<User> findUsersByFilterWithPagination(
+      @Param("birthDay") LocalDate birthDay,
+      @Param("email") String email,
+      @Param("status") Integer status,
+      @Param("username") String username,
+      @Param("firstName") String firstName,
+      @Param("lastName") String lastName,
+      Pageable pageable);
 }

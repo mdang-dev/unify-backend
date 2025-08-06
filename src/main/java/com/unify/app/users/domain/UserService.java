@@ -4,6 +4,7 @@ import com.unify.app.users.domain.models.ShareAbleUserDto;
 import com.unify.app.users.domain.models.UserDto;
 import com.unify.app.users.domain.models.UserReportCountDto;
 import com.unify.app.users.domain.models.auth.CreateUserCmd;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -11,7 +12,9 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -323,6 +326,20 @@ public class UserService {
                       : null);
             })
         .toList();
+  }
+
+  public Page<UserDto> filterUsersWithPagination(
+      LocalDate birthDay,
+      String email,
+      Integer status,
+      String username,
+      String firstName,
+      String lastName,
+      Pageable pageable) {
+    Page<User> userPage =
+        userRepository.findUsersByFilterWithPagination(
+            birthDay, email, status, username, firstName, lastName, pageable);
+    return userPage.map(userMapper::toUserDTO);
   }
 
   private String encryptPassword(String password) {
