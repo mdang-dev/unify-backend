@@ -38,7 +38,6 @@ public class MessageController {
 
   @MessageMapping("/chat.sendMessage")
   public void sendMessage(@Payload MessageDto message) {
-    long startTime = System.currentTimeMillis();
     try {
       // ✅ PERFORMANCE: Ultra-fast message processing
       MessageDto updateMessage = MessageDto.withCurrentTimestamp(message);
@@ -57,18 +56,13 @@ public class MessageController {
               // Broadcast chat list updates to both users
               broadcastChatListUpdate(updateMessage.sender(), updateMessage.receiver());
 
-              // Track performance
-              performanceMonitor.incrementMessagesSent();
-              performanceMonitor.addMessageProcessingTime(System.currentTimeMillis() - startTime);
-
             } catch (Exception e) {
-              log.error("Async message processing error: {}", e.getMessage());
+              // Silent error handling
             }
           });
 
     } catch (Exception e) {
-      log.error("Error sending message: {}", e.getMessage());
-      // Send error notification to sender
+      // Silent error handling
       messagingTemplate.convertAndSendToUser(
           message.sender(),
           "/queue/errors",
@@ -79,21 +73,24 @@ public class MessageController {
   // ✅ REAL-TIME: Broadcast chat list updates to both users
   private void broadcastChatListUpdate(String senderId, String receiverId) {
     try {
-      // Get updated chat lists
-      List<ChatDto> senderChatList = messageService.getChatList(senderId);
-      List<ChatDto> receiverChatList = messageService.getChatList(receiverId);
+      // ✅ FIX: Send minimal update notification instead of full chat list
+      // This prevents overriding optimistic updates on frontend
+      Map<String, Object> updateNotification =
+          Map.of(
+              "type", "chat-list-update",
+              "timestamp", System.currentTimeMillis(),
+              "message", "Chat list updated");
 
-      // Send to sender (only chat list update, not the message)
-      messagingTemplate.convertAndSendToUser(senderId, "/queue/chat-list-update", senderChatList);
-
-      // Send to receiver (both message and chat list update)
+      // Send to sender (only notification, not full list)
       messagingTemplate.convertAndSendToUser(
-          receiverId, "/queue/chat-list-update", receiverChatList);
+          senderId, "/queue/chat-list-update", updateNotification);
 
-      // Silent broadcast success
+      // Send to receiver (only notification, not full list)
+      messagingTemplate.convertAndSendToUser(
+          receiverId, "/queue/chat-list-update", updateNotification);
 
     } catch (Exception e) {
-      log.error("Failed to broadcast chat list update: {}", e.getMessage());
+      // Silent error handling
     }
   }
 
@@ -148,7 +145,6 @@ public class MessageController {
   @GetMapping("/chat-list/{userId}")
   public ResponseEntity<?> getChatList(@PathVariable String userId) {
     if (userId == null || userId.trim().isEmpty()) {
-      log.error("ERROR: userId is null or empty");
       return ResponseEntity.badRequest().body("User ID is required");
     }
 
@@ -157,20 +153,9 @@ public class MessageController {
       return ResponseEntity.ok(chatList);
 
     } catch (Exception e) {
-      log.error("Error getting chat list for user {}: {}", userId, e.getMessage());
       return ResponseEntity.status(500)
           .body(
-              Map.of(
-                  "error",
-                  "Internal server error",
-                  "message",
-                  "Failed to retrieve chat list",
-                  "details",
-                  e.getMessage(),
-                  "userId",
-                  userId,
-                  "timestamp",
-                  java.time.LocalDateTime.now().toString()));
+              Map.of("error", "Internal server error", "message", "Failed to retrieve chat list"));
     }
   }
 }
