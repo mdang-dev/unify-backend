@@ -1,12 +1,14 @@
 package com.unify.app.posts.domain;
 
 import com.unify.app.hashtags.domain.HashtagService;
+import com.unify.app.hashtags.domain.models.HashtagDetailDto;
 import com.unify.app.hashtags.domain.models.HashtagDto;
 import com.unify.app.posts.domain.models.Audience;
 import com.unify.app.posts.domain.models.MediaDto;
 import com.unify.app.posts.domain.models.PersonalizedPostDto;
 import com.unify.app.posts.domain.models.PostDto;
 import com.unify.app.posts.domain.models.PostFeedResponse;
+import com.unify.app.posts.domain.models.PostFilterDto;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -23,6 +25,10 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Service
 public class PostService {
+
+  private static PostNotFoundException createPostNotFoundException() {
+    return new PostNotFoundException("Post not found!");
+  }
 
   private final PostRepository postRepository;
   private final PostMapper mapper;
@@ -52,15 +58,12 @@ public class PostService {
   }
 
   public PostDto getById(String id) {
-    Post post =
-        postRepository.findById(id).orElseThrow(() -> new PostNotFoundException("Post not found!"));
+    Post post = postRepository.findById(id).orElseThrow(PostService::createPostNotFoundException);
     return mapper.toPostDto(post);
   }
 
   public Post findById(String id) {
-    return postRepository
-        .findById(id)
-        .orElseThrow(() -> new PostNotFoundException("Post not found!"));
+    return postRepository.findById(id).orElseThrow(PostService::createPostNotFoundException);
   }
 
   public Post update(Post post) {
@@ -231,5 +234,66 @@ public class PostService {
           postDto.setCommentCount(commentCount);
           return postDto;
         });
+  }
+
+  public Page<PostDto> getPostsWithFilters(
+      String captions,
+      Integer status,
+      Audience audience,
+      LocalDateTime postedAt,
+      Boolean isCommentVisible,
+      Boolean isLikeVisible,
+      Set<HashtagDetailDto> hashtags,
+      Long commentCount,
+      String commentCountOperator,
+      int page,
+      int size) {
+
+    Pageable pageable = PageRequest.of(page, size);
+
+    Page<Object[]> filteredPosts =
+        postRepository.findPostsWithFilters(
+            captions,
+            status,
+            audience,
+            postedAt,
+            isCommentVisible,
+            isLikeVisible,
+            commentCount,
+            commentCountOperator,
+            pageable);
+
+    return filteredPosts.map(
+        result -> {
+          // Since we're using native query, we need to manually map the result
+          // The result contains all Post fields as Object[]
+          Post post = new Post();
+          post.setId((String) result[0]);
+          post.setCaptions((String) result[1]);
+          post.setStatus((Integer) result[2]);
+          post.setAudience(Audience.valueOf((String) result[3]));
+          post.setPostedAt((LocalDateTime) result[4]);
+          post.setIsCommentVisible((Boolean) result[5]);
+          post.setIsLikeVisible((Boolean) result[6]);
+          post.setUpdatedAt((LocalDateTime) result[7]);
+          // Note: user_id is at index 8, but we'll need to fetch the user separately if needed
+
+          return mapper.toPostDto(post);
+        });
+  }
+
+  public Page<PostDto> getPostsWithFilters(PostFilterDto filterDto, int page, int size) {
+    return getPostsWithFilters(
+        filterDto.captions(),
+        filterDto.status(),
+        filterDto.audience(),
+        filterDto.postedAt(),
+        filterDto.isCommentVisible(),
+        filterDto.isLikeVisible(),
+        filterDto.hashtags(),
+        filterDto.commentCount(),
+        filterDto.commentCountOperator(),
+        page,
+        size);
   }
 }
