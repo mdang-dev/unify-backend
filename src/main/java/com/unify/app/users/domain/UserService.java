@@ -96,6 +96,29 @@ public class UserService {
             .orElseThrow(() -> new UserNotFoundException("User not found !")));
   }
 
+  // ✅ FIX: Safe method that returns null instead of throwing exception
+  public UserDto findByIdSafe(String id) {
+    try {
+      if (id == null || id.trim().isEmpty()) {
+        System.err.println("Error: User ID is null or empty");
+        return null;
+      }
+
+      var user = userRepository.findById(id).orElse(null);
+      if (user == null) {
+        System.err.println("User not found in database for ID: " + id);
+        return null;
+      }
+
+      return userMapper.toUserDTO(user);
+    } catch (Exception e) {
+      System.err.println("Error finding user by ID: " + id + " - " + e.getMessage());
+      System.err.println("Error type: " + e.getClass().getSimpleName());
+      e.printStackTrace();
+      return null;
+    }
+  }
+
   public User update(User user) {
     var updateUser = this.findUserById(user.getId());
     return userRepository.save(updateUser);

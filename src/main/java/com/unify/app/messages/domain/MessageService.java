@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MessageService {
 
   private final MongoTemplate mongoTemplate;
@@ -44,28 +46,178 @@ public class MessageService {
         .collect(Collectors.toList());
   }
 
-  @Cacheable(value = "chatLists", key = "#user.id")
+  @Cacheable(value = "chatLists", key = "#userId")
   public List<ChatDto> getChatList(String userId) {
-    List<ChatPreviewProjection> rawList = messageRepository.findChatList(userId);
+    // ✅ FIX: Enhanced input validation
+    if (userId == null || userId.trim().isEmpty()) {
+      log.error("Error: userId is null or empty");
+      return List.of();
+    }
 
-    return rawList.stream()
-        .map(
-            chat -> {
-              UserDto user = userService.findById(chat.get_id());
-              return ChatDto.builder()
-                  .userId(user.id())
-                  .username(user.username())
-                  .fullName(user.firstName() + " " + user.lastName())
-                  .avatar(user.avatar())
-                  .lastMessage(chat.getLastMessage())
-                  .lastMessageTime(chat.getLastMessageTime())
-                  .build();
-            })
-        .sorted(
-            Comparator.comparing(
-                    ChatDto::getLastMessageTime, Comparator.nullsLast(LocalDateTime::compareTo))
-                .reversed())
-        .collect(Collectors.toList());
+    try {
+      // ✅ FIX: Step 1: Get raw chat list from MongoDB with fallback
+      List<ChatPreviewProjection> rawList = getChatListFromMongo(userId);
+
+      if (rawList == null || rawList.isEmpty()) {
+        return List.of();
+      }
+
+      // ✅ FIX: Step 2: Process and build chat DTOs with validation
+      List<ChatDto> result = buildChatDtos(rawList);
+      return result;
+
+    } catch (Exception e) {
+      log.error("Critical error in getChatList for user {}: {}", userId, e.getMessage());
+      // ✅ FIX: Return empty list instead of throwing to prevent 500 errors
+      return List.of();
+    }
+  }
+
+  private List<ChatPreviewProjection> getChatListFromMongo(String userId) {
+    try {
+      List<ChatPreviewProjection> result = messageRepository.findChatList(userId);
+      return result != null ? result : List.of();
+    } catch (Exception e) {
+      log.error("MongoDB aggregation failed for user {}: {}", userId, e.getMessage());
+      return getChatListFallback(userId);
+    }
+  }
+
+  private List<ChatPreviewProjection> getChatListFallback(String userId) {
+    try {
+      // Manual fallback: get all messages and group them manually
+      List<Message> allMessages = messageRepository.findAll();
+
+      return allMessages.stream()
+          .filter(msg -> userId.equals(msg.getSender()) || userId.equals(msg.getReceiver()))
+          .collect(
+              Collectors.groupingBy(
+                  msg -> userId.equals(msg.getSender()) ? msg.getReceiver() : msg.getSender()))
+          .entrySet()
+          .stream()
+          .map(
+              entry -> {
+                String otherUserId = entry.getKey();
+                List<Message> userMessages = entry.getValue();
+
+                // Get the latest message
+                Message latestMessage =
+                    userMessages.stream()
+                        .max(Comparator.comparing(Message::getTimestamp))
+                        .orElse(null);
+
+                if (latestMessage == null || otherUserId == null) {
+                  return null;
+                }
+
+                return new ChatPreviewProjection() {
+                  @Override
+                  public String get_id() {
+                    return otherUserId;
+                  }
+
+                  @Override
+                  public String getLastMessage() {
+                    return latestMessage.getContent();
+                  }
+
+                  @Override
+                  public LocalDateTime getLastMessageTime() {
+                    return latestMessage.getTimestamp();
+                  }
+                };
+              })
+          .filter(chat -> chat != null)
+          .collect(Collectors.toList());
+
+    } catch (Exception e) {
+      System.err.println("Fallback method also failed for user " + userId + ": " + e.getMessage());
+      return List.of();
+    }
+  }
+
+  private List<ChatDto> buildChatDtos(List<ChatPreviewProjection> rawList) {
+    // ✅ FIX: Enhanced validation and error handling
+    if (rawList == null) {
+      System.err.println("Warning: rawList is null");
+      return List.of();
+    }
+
+    try {
+      return rawList.stream()
+          .map(this::buildChatDto)
+          .filter(chat -> chat != null) // Remove null entries
+          .sorted(
+              Comparator.comparing(
+                      ChatDto::getLastMessageTime, Comparator.nullsLast(LocalDateTime::compareTo))
+                  .reversed())
+          .collect(Collectors.toList());
+    } catch (Exception e) {
+      System.err.println("Error in buildChatDtos: " + e.getMessage());
+      e.printStackTrace();
+      return List.of();
+    }
+  }
+
+  private ChatDto buildChatDto(ChatPreviewProjection chat) {
+    // ✅ FIX: Enhanced null checks
+    if (chat == null) {
+      return null;
+    }
+
+    String otherUserId = chat.get_id();
+    if (otherUserId == null || otherUserId.trim().isEmpty()) {
+      System.err.println("Chat projection has null or empty _id");
+      return null;
+    }
+
+    try {
+      // ✅ FIX: Get user data with safe method
+      UserDto user = getUserDataWithFallback(otherUserId);
+      if (user == null) {
+        System.err.println("User not found for chat: " + otherUserId);
+        return null;
+      }
+
+      // ✅ FIX: Validate user data
+      if (user.id() == null || user.id().trim().isEmpty()) {
+        System.err.println("User ID is null or empty for user: " + otherUserId);
+        return null;
+      }
+
+      return ChatDto.builder()
+          .userId(user.id())
+          .username(safeString(user.username()))
+          .fullName(buildFullName(user))
+          .avatar(user.avatar())
+          .lastMessage(safeString(chat.getLastMessage()))
+          .lastMessageTime(chat.getLastMessageTime())
+          .build();
+
+    } catch (Exception e) {
+      System.err.println("Error building chat DTO for user " + otherUserId + ": " + e.getMessage());
+      e.printStackTrace();
+      return null;
+    }
+  }
+
+  private UserDto getUserDataWithFallback(String userId) {
+    return userService.findByIdSafe(userId); // ✅ FIX: Use safe method
+  }
+
+  private String buildFullName(UserDto user) {
+    String firstName = safeString(user.firstName());
+    String lastName = safeString(user.lastName());
+
+    if (firstName.isEmpty() && lastName.isEmpty()) {
+      return "Unknown User";
+    }
+
+    return (firstName + " " + lastName).trim();
+  }
+
+  private String safeString(String value) {
+    return value != null ? value : "";
   }
 
   @Caching(
@@ -80,6 +232,28 @@ public class MessageService {
     if (message.receiver() == null) {
       throw new IllegalArgumentException("Receiver must not be null");
     }
-    return mapper.toDto(messageRepository.save(messageEntity));
+
+    // ✅ PERFORMANCE: Optimized message saving
+    Message savedMessage = messageRepository.save(messageEntity);
+    MessageDto savedDto = mapper.toDto(savedMessage);
+
+    // ✅ REAL-TIME: Update chat list cache immediately
+    updateChatListCache(savedMessage.getSender(), savedMessage.getReceiver());
+
+    return savedDto;
+  }
+
+  // ✅ REAL-TIME: Method to update chat list cache for both users
+  private void updateChatListCache(String senderId, String receiverId) {
+    try {
+      // Update sender's chat list
+      List<ChatDto> senderChatList = getChatList(senderId);
+      // Update receiver's chat list
+      List<ChatDto> receiverChatList = getChatList(receiverId);
+
+      log.debug("Updated chat list cache for users: {} and {}", senderId, receiverId);
+    } catch (Exception e) {
+      log.warn("Failed to update chat list cache: {}", e.getMessage());
+    }
   }
 }

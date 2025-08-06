@@ -1,30 +1,33 @@
 package com.unify.app.ws;
 
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.Message;
-import org.springframework.security.authorization.AuthorizationManager;
-import org.springframework.security.config.annotation.web.socket.EnableWebSocketSecurity;
-import org.springframework.security.messaging.access.intercept.MessageMatcherDelegatingAuthorizationManager;
+import org.springframework.security.config.annotation.web.messaging.MessageSecurityMetadataSourceRegistry;
+import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer;
 
 @Configuration
-@EnableWebSocketSecurity
-public class WebSocketSecurityConfig {
+public class WebSocketSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
 
-  @Bean
-  AuthorizationManager<Message<?>> messageAuthorizationManager(
-      MessageMatcherDelegatingAuthorizationManager.Builder messages) {
-
+  @Override
+  protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
     messages
         .nullDestMatcher()
         .permitAll()
+        .simpSubscribeDestMatchers("/topic/**")
+        .permitAll()
+        .simpSubscribeDestMatchers("/queue/**")
+        .authenticated()
         .simpSubscribeDestMatchers("/user/**")
         .authenticated()
         .simpDestMatchers("/app/**")
         .authenticated()
         .anyMessage()
         .denyAll();
+  }
 
-    return messages.build();
+  @Override
+  protected boolean sameOriginDisabled() {
+    // Disable same origin check for WebSocket connections
+    // This is needed because WebSocket connections don't follow the same origin policy
+    return true;
   }
 }
