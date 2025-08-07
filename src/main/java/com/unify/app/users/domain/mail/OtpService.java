@@ -19,9 +19,8 @@ public class OtpService {
   }
 
   public boolean validateOtp(String email, String otp) {
-    // return otpCache.containsKey(email) && otpCache.get(email).equals(otp);
-    if (otpCache.equals(otpCache.get(email))) {
-      otpValidated.put(otp, true);
+    if (otpCache.containsKey(email) && otpCache.get(email).equals(otp)) {
+      otpValidated.put(email, true);
       return true;
     }
     return false;

@@ -46,29 +46,26 @@ public class MessageService {
         .collect(Collectors.toList());
   }
 
-  @Cacheable(value = "chatLists", key = "#userId")
+  // ✅ PRODUCTION FIX: Remove caching to prevent race conditions and stale data
   public List<ChatDto> getChatList(String userId) {
-    // ✅ FIX: Enhanced input validation
     if (userId == null || userId.trim().isEmpty()) {
-      log.error("Error: userId is null or empty");
       return List.of();
     }
 
     try {
-      // ✅ FIX: Step 1: Get raw chat list from MongoDB with fallback
       List<ChatPreviewProjection> rawList = getChatListFromMongo(userId);
 
       if (rawList == null || rawList.isEmpty()) {
         return List.of();
       }
 
-      // ✅ FIX: Step 2: Process and build chat DTOs with validation
       List<ChatDto> result = buildChatDtos(rawList);
       return result;
 
     } catch (Exception e) {
-      log.error("Critical error in getChatList for user {}: {}", userId, e.getMessage());
-      // ✅ FIX: Return empty list instead of throwing to prevent 500 errors
+      if (log.isErrorEnabled()) {
+        log.error("Error in getChatList for user {}: {}", userId, e.getMessage());
+      }
       return List.of();
     }
   }
@@ -78,8 +75,10 @@ public class MessageService {
       List<ChatPreviewProjection> result = messageRepository.findChatList(userId);
       return result != null ? result : List.of();
     } catch (Exception e) {
-      log.error("MongoDB aggregation failed for user {}: {}", userId, e.getMessage());
-      return getChatListFallback(userId);
+      if (log.isErrorEnabled()) {
+        log.error("MongoDB error for user {}: {}", userId, e.getMessage());
+      }
+      return List.of();
     }
   }
 
@@ -158,7 +157,6 @@ public class MessageService {
   }
 
   private ChatDto buildChatDto(ChatPreviewProjection chat) {
-    // ✅ FIX: Enhanced null checks
     if (chat == null) {
       return null;
     }
@@ -169,15 +167,16 @@ public class MessageService {
     }
 
     try {
-      // ✅ FIX: Get user data with safe method
       UserDto user = getUserDataWithFallback(otherUserId);
-      if (user == null) {
-        return null;
-      }
-
-      // ✅ FIX: Validate user data
-      if (user.id() == null || user.id().trim().isEmpty()) {
-        return null;
+      if (user == null || user.id() == null || user.id().trim().isEmpty()) {
+        return ChatDto.builder()
+            .userId(otherUserId)
+            .username("Unknown User")
+            .fullName("Unknown User")
+            .avatar(null)
+            .lastMessage(safeString(chat.getLastMessage()))
+            .lastMessageTime(chat.getLastMessageTime())
+            .build();
       }
 
       LocalDateTime lastMessageTime = chat.getLastMessageTime();
@@ -192,13 +191,23 @@ public class MessageService {
           .build();
 
     } catch (Exception e) {
-      log.error("Error building chat DTO for user {}: {}", otherUserId, e.getMessage());
-      return null;
+      return ChatDto.builder()
+          .userId(otherUserId)
+          .username("Unknown User")
+          .fullName("Unknown User")
+          .avatar(null)
+          .lastMessage(safeString(chat.getLastMessage()))
+          .lastMessageTime(chat.getLastMessageTime())
+          .build();
     }
   }
 
   private UserDto getUserDataWithFallback(String userId) {
-    return userService.findByIdSafe(userId); // ✅ FIX: Use safe method
+    try {
+      return userService.findByIdSafe(userId);
+    } catch (Exception e) {
+      return null;
+    }
   }
 
   private String buildFullName(UserDto user) {

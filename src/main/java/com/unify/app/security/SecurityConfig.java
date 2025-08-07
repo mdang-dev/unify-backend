@@ -41,6 +41,7 @@ public class SecurityConfig {
     "/v3/api-docs/**",
     "/swagger-resources/**",
     "/webjars/**",
+    "/messages/health", // ✅ PRODUCTION FIX: Allow health check without authentication
   };
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final CustomUserDetailsService customUserDetailsService;
