@@ -6,11 +6,13 @@ import com.unify.app.users.domain.models.UserReportCountDto;
 import com.unify.app.users.domain.models.auth.CreateUserCmd;
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -65,12 +67,19 @@ public class UserService {
             .orElseThrow(() -> new RuntimeException("Role not found !"));
     user.setRoles(Collections.singleton(role));
 
-    Avatar avatar = Avatar.builder().url(avatarUrl).user(user).build();
-    user.setAvatars(Set.of());
-    avatarRepository.save(avatar);
-    User savedUser = userRepository.save(userMapper.toUser(userDto));
+    // Save user first
+    User savedUser = userRepository.save(user);
+
+    // Create default avatar
+    Avatar avatar = Avatar.builder().url(avatarUrl).user(savedUser).build();
+    avatar = avatarRepository.save(avatar);
+
+    // Set avatar to user
+    savedUser.setAvatars(Set.of(avatar));
+    savedUser = userRepository.save(savedUser);
+
     // streamService.createInitStream(user.getUsername(), user);
-    return userMapper.toUserDTO(user);
+    return userMapper.toUserDTO(savedUser);
   }
 
   public boolean existsByEmail(String email) {
@@ -147,6 +156,7 @@ public class UserService {
   // }
 
   @PreAuthorize("#userDto.email == authentication.name")
+  @CacheEvict(value = "user", key = "#userDto.id")
   public UserDto updateUser(UserDto userDto) {
 
     User existingUser =
@@ -157,20 +167,41 @@ public class UserService {
     User updatedUser = userMapper.toUser(userDto);
     updatedUser.setReportApprovalCount(existingUser.getReportApprovalCount());
     updatedUser.setPassword(existingUser.getPassword());
-    if (updatedUser.getAvatars() != null) {
+    updatedUser.setRoles(existingUser.getRoles()); // Preserve roles
+
+    // Handle avatar update
+    if (userDto.avatar() != null && userDto.avatar().url() != null) {
+      // Create new avatar and save it to database
       Avatar newAvatar = avatarMapper.toAvatar(userDto.avatar());
       newAvatar.setUser(updatedUser);
+      newAvatar = avatarRepository.save(newAvatar);
 
-      if (updatedUser.getAvatars() == null) {
-        updatedUser.setAvatars(Set.of());
+      // Add new avatar to existing avatars (keep all avatars, newest will be first)
+      Set<Avatar> allAvatars = new HashSet<>();
+      if (existingUser.getAvatars() != null) {
+        allAvatars.addAll(existingUser.getAvatars());
       }
-      updatedUser.setAvatars(Set.of(newAvatar));
+      allAvatars.add(newAvatar);
+      updatedUser.setAvatars(allAvatars);
     } else {
+      // Keep existing avatars if no new avatar provided
       updatedUser.setAvatars(existingUser.getAvatars());
     }
+
     updatedUser = userRepository.save(updatedUser);
 
     return userMapper.toUserDTO(updatedUser);
+  }
+
+  // Clear user cache when needed
+  @CacheEvict(value = "user", key = "#userId")
+  public void clearUserCache(String userId) {
+    // This method is used to manually clear user cache
+  }
+
+  // Get the latest avatar for a user from database
+  public Avatar getLatestAvatar(String userId) {
+    return avatarRepository.findLatestByUserId(userId).orElse(null);
   }
 
   @PreAuthorize("hasRole('ADMIN')")
@@ -219,6 +250,14 @@ public class UserService {
         userRepository
             .findByEmail(name)
             .orElseThrow(() -> new UserNotFoundException("User not found !"));
+
+    // Ensure we have the latest avatar
+    Avatar latestAvatar = getLatestAvatar(user.getId());
+    if (latestAvatar != null) {
+      // Update the user's avatar set to only contain the latest avatar
+      user.setAvatars(Set.of(latestAvatar));
+    }
+
     return userMapper.toUserDTO(user);
   }
 
