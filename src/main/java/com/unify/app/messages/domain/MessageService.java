@@ -152,6 +152,7 @@ public class MessageService {
                   .reversed()) // Newest first
           .collect(Collectors.toList());
     } catch (Exception e) {
+      log.error("Error building chat DTOs: {}", e.getMessage());
       return List.of();
     }
   }
@@ -164,7 +165,6 @@ public class MessageService {
 
     String otherUserId = chat.get_id();
     if (otherUserId == null || otherUserId.trim().isEmpty()) {
-      System.err.println("Chat projection has null or empty _id");
       return null;
     }
 
@@ -172,15 +172,15 @@ public class MessageService {
       // ✅ FIX: Get user data with safe method
       UserDto user = getUserDataWithFallback(otherUserId);
       if (user == null) {
-        System.err.println("User not found for chat: " + otherUserId);
         return null;
       }
 
       // ✅ FIX: Validate user data
       if (user.id() == null || user.id().trim().isEmpty()) {
-        System.err.println("User ID is null or empty for user: " + otherUserId);
         return null;
       }
+
+      LocalDateTime lastMessageTime = chat.getLastMessageTime();
 
       return ChatDto.builder()
           .userId(user.id())
@@ -188,12 +188,11 @@ public class MessageService {
           .fullName(buildFullName(user))
           .avatar(user.avatar())
           .lastMessage(safeString(chat.getLastMessage()))
-          .lastMessageTime(chat.getLastMessageTime())
+          .lastMessageTime(lastMessageTime)
           .build();
 
     } catch (Exception e) {
-      System.err.println("Error building chat DTO for user " + otherUserId + ": " + e.getMessage());
-      e.printStackTrace();
+      log.error("Error building chat DTO for user {}: {}", otherUserId, e.getMessage());
       return null;
     }
   }

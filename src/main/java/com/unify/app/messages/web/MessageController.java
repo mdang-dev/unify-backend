@@ -1,5 +1,6 @@
 package com.unify.app.messages.web;
 
+import com.unify.app.common.utils.DateTimeUtils;
 import com.unify.app.messages.domain.MessageService;
 import com.unify.app.messages.domain.models.ChatDto;
 import com.unify.app.messages.domain.models.MessageDto;
@@ -33,7 +34,7 @@ public class MessageController {
         Map.of(
             "status", "UP",
             "service", "MessageService",
-            "timestamp", java.time.LocalDateTime.now().toString()));
+            "timestamp", DateTimeUtils.nowVietnam().toString()));
   }
 
   @MessageMapping("/chat.sendMessage")
