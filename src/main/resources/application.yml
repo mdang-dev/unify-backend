@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: unify-backend
+  
+  # Cấu hình timezone cho toàn bộ ứng dụng
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
+    default-property-inclusion: non_null
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/postgres}
@@ -16,7 +21,7 @@ spring:
     hibernate:
       ddl-auto: none
       dialect: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
+    show-sql: false
 
   data:
     mongodb:
@@ -63,15 +68,15 @@ logging:
     org:
       springframework:
         boot:
-          autoconfigure: INFO
+          autoconfigure: WARN
         web:
-          socket: INFO
-        messaging: INFO
+          socket: WARN
+        messaging: WARN
     com:
       unify:
         app:
-          ws: DEBUG
-          messages: INFO
+          ws: WARN
+          messages: WARN
 
 springdoc:
   swagger-ui:
