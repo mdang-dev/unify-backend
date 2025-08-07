@@ -83,7 +83,7 @@ public class NotificationService {
                   Thread.sleep(3000);
                   sendNewNotification(senderId, receiverId, type);
                 } catch (InterruptedException e) {
-                  e.printStackTrace();
+                  Thread.currentThread().interrupt();
                 }
               })
           .start();
