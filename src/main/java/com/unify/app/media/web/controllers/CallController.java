@@ -3,7 +3,12 @@ package com.unify.app.media.web.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.unify.app.media.domain.TokenGenerator;
 import com.unify.app.media.domain.models.AcceptCallDto;
+import com.unify.app.media.domain.models.CallActionResponse;
+import com.unify.app.media.domain.models.CallNotification;
 import com.unify.app.media.domain.models.CallRequest;
+import com.unify.app.media.domain.models.CallResponse;
+import com.unify.app.media.domain.models.CallSession;
+import com.unify.app.media.domain.models.CallTokenResponse;
 import com.unify.app.media.domain.models.RejectCallDto;
 import com.unify.app.users.domain.UserService;
 import com.unify.app.users.domain.models.UserDto;
@@ -35,10 +40,10 @@ class CallController {
   private final TokenGenerator tokenGenerator;
   private final UserService userService;
 
-  private Map<String, Map<String, Object>> activeCalls = new HashMap<>();
+  private Map<String, CallSession> activeCalls = new HashMap<>();
 
   @PostMapping
-  public ResponseEntity<Map<String, String>> startCall(@Valid @RequestBody CallRequest request)
+  public ResponseEntity<CallResponse> startCall(@Valid @RequestBody CallRequest request)
       throws JsonProcessingException {
 
     String room = "" + UUID.randomUUID();
@@ -51,43 +56,49 @@ class CallController {
     UserDto caller = userService.findById(callerId);
     UserDto callee = userService.findById(calleeId);
 
-    activeCalls.put(
-        room + "-" + callerId,
-        Map.of(
-            "token",
-            callerToken,
-            "video",
-            isVideo,
-            "isCaller",
-            true,
-            "calleeName",
-            callee.firstName() + " " + callee.lastName(),
-            "calleeAvatar",
-            callee.avatar().url()));
+    // Create caller session
+    CallSession callerSession = CallSession.builder()
+        .token(callerToken)
+        .video(isVideo)
+        .isCaller(true)
+        .calleeName(callee.firstName() + " " + callee.lastName())
+        .calleeAvatar(callee.avatar().url())
+        .room(room)
+        .userId(callerId)
+        .build();
 
-    activeCalls.put(room + "-" + calleeId, Map.of("token", calleeToken, "video", isVideo));
+    // Create callee session
+    CallSession calleeSession = CallSession.builder()
+        .token(calleeToken)
+        .video(isVideo)
+        .isCaller(false)
+        .room(room)
+        .userId(calleeId)
+        .build();
 
-    messagingTemplate.convertAndSend(
-        "/topic/call/" + calleeId,
-        Map.of(
-            "room",
-            room,
-            "callerId",
-            callerId,
-            "callerName",
-            caller.firstName() + " " + caller.lastName()));
+    activeCalls.put(room + "-" + callerId, callerSession);
+    activeCalls.put(room + "-" + calleeId, calleeSession);
+
+    // Create call notification
+    CallNotification notification = new CallNotification(room, callerId, caller.firstName() + " " + caller.lastName());
+
+    messagingTemplate.convertAndSend("/topic/call/" + calleeId, notification);
 
     log.info("{} calling {}", callerId, calleeId);
 
-    return ResponseEntity.ok(Map.of("room", room));
+    CallResponse response = new CallResponse(room);
+
+    return ResponseEntity.ok(response);
   }
 
   @MessageMapping("/call.accept")
   public void acceptedCall(@Payload AcceptCallDto acceptCallDto) {
     log.info(
         "User {} accepted call from {}", acceptCallDto.fromUser(), acceptCallDto.acceptedFrom());
-    messagingTemplate.convertAndSend(
-        "/topic/call/" + acceptCallDto.acceptedFrom(), Map.of("type", "accept"));
+
+    CallActionResponse response = new CallActionResponse("accept", "Call accepted");
+
+    messagingTemplate.convertAndSend("/topic/call/" + acceptCallDto.acceptedFrom(), response);
   }
 
   @MessageMapping("/call.reject")
@@ -98,16 +109,19 @@ class CallController {
     String callerKey = room + "-" + callerId;
     String calleeKey = room + "-" + calleeId;
 
-    var activeCallerCall = activeCalls.get(callerKey);
-    var activeCalleeCall = activeCallerCall.get(calleeKey);
+    CallSession activeCallerCall = activeCalls.get(callerKey);
+    CallSession activeCalleeCall = activeCalls.get(calleeKey);
 
-    if (activeCallerCall != null) activeCalls.remove(callerKey);
-    if (activeCalleeCall != null) activeCalls.remove(calleeKey);
+    if (activeCallerCall != null)
+      activeCalls.remove(callerKey);
+    if (activeCalleeCall != null)
+      activeCalls.remove(calleeKey);
 
     log.info("User {} reject call from {}", calleeId, callerId);
 
-    messagingTemplate.convertAndSend(
-        "/topic/call/" + rejectDto.callerId(), Map.of("type", "reject"));
+    CallActionResponse response = new CallActionResponse("reject", "Call rejected");
+
+    messagingTemplate.convertAndSend("/topic/call/" + rejectDto.callerId(), response);
   }
 
   @DeleteMapping("/{code}")
@@ -121,8 +135,21 @@ class CallController {
   }
 
   @GetMapping("/token/{code}")
-  public ResponseEntity<Map<String, Object>> getToken(@PathVariable String code)
+  public ResponseEntity<CallTokenResponse> getToken(@PathVariable String code)
       throws JsonProcessingException {
-    return ResponseEntity.ok(activeCalls.getOrDefault(code, null));
+
+    CallSession session = activeCalls.get(code);
+    if (session == null) {
+      return ResponseEntity.notFound().build();
+    }
+
+    CallTokenResponse tokenResponse = new CallTokenResponse(
+        session.getToken(),
+        session.isVideo(),
+        session.isCaller(),
+        session.getCalleeName(),
+        session.getCalleeAvatar());
+
+    return ResponseEntity.ok(tokenResponse);
   }
 }

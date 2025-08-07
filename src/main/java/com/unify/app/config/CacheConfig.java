@@ -16,6 +16,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.lang.NonNull;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
 
 @Configuration
@@ -24,11 +25,11 @@ public class CacheConfig implements BeanClassLoaderAware {
   private ClassLoader loader;
 
   @Override
-  public void setBeanClassLoader(ClassLoader classLoader) {
+  public void setBeanClassLoader(@NonNull ClassLoader classLoader) {
     this.loader = classLoader;
   }
 
-  @Bean(name = {"redisSerializer"})
+  @Bean(name = { "redisSerializer" })
   public RedisSerializer<Object> redisSerializer() {
     return new GenericJackson2JsonRedisSerializer(objectMapper());
   }
@@ -36,14 +37,13 @@ public class CacheConfig implements BeanClassLoaderAware {
   @Bean
   RedisCacheManager cacheManager(
       RedisConnectionFactory redisConnectionFactory, RedisSerializer<Object> serializer) {
-    RedisCacheConfiguration cacheConfiguration =
-        RedisCacheConfiguration.defaultCacheConfig()
-            .serializeKeysWith(
-                RedisSerializationContext.SerializationPair.fromSerializer(
-                    new StringRedisSerializer()))
-            .serializeValuesWith(
-                RedisSerializationContext.SerializationPair.fromSerializer(serializer))
-            .entryTtl(Duration.ofMinutes(1));
+    RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
+        .serializeKeysWith(
+            RedisSerializationContext.SerializationPair.fromSerializer(
+                new StringRedisSerializer()))
+        .serializeValuesWith(
+            RedisSerializationContext.SerializationPair.fromSerializer(serializer))
+        .entryTtl(Duration.ofMinutes(1));
     return RedisCacheManager.builder(redisConnectionFactory)
         .cacheDefaults(cacheConfiguration)
         .build();
