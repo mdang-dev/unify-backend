@@ -175,4 +175,10 @@ class UserController {
     userService.removeUser(id);
     return ResponseEntity.ok("Remove User Successfully !");
   }
+
+  @PostMapping("/clear-cache/{id}")
+  ResponseEntity<String> clearUserCache(@PathVariable String id) {
+    userService.clearUserCache(id);
+    return ResponseEntity.ok("User cache cleared successfully!");
+  }
 }

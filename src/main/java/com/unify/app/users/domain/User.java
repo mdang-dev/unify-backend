@@ -107,6 +107,19 @@ public class User implements Serializable {
   Stream stream;
 
   public Avatar latestAvatar() {
-    return avatars == null || avatars.isEmpty() ? null : avatars.iterator().next();
+    if (avatars == null || avatars.isEmpty()) {
+      return null;
+    }
+
+    // Find the avatar with the latest createdAt timestamp
+    return avatars.stream()
+        .max(
+            (a1, a2) -> {
+              if (a1.getCreatedAt() == null && a2.getCreatedAt() == null) return 0;
+              if (a1.getCreatedAt() == null) return -1;
+              if (a2.getCreatedAt() == null) return 1;
+              return a1.getCreatedAt().compareTo(a2.getCreatedAt());
+            })
+        .orElse(null);
   }
 }
