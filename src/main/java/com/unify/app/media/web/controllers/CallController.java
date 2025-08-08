@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -34,7 +33,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/call")
@@ -46,6 +44,7 @@ class CallController {
   private final TokenGenerator tokenGenerator;
   private final UserService userService;
   private final ApplicationProperties properties;
+
   @Value("${unify.livekit-host}")
   private String livekitHost;
 
@@ -65,8 +64,12 @@ class CallController {
     return ResponseEntity.ok(
         List.of(
             new DebugUrlDto("value", livekitHost, livekitWsUrl, livekitApiKey, livekitApiSecret),
-            new DebugUrlDto("properites", properties.livekitHost(), properties.livekitWsUrl(),
-                properties.livekitApiKey(), properties.livekitApiSecret())));
+            new DebugUrlDto(
+                "properites",
+                properties.livekitHost(),
+                properties.livekitWsUrl(),
+                properties.livekitApiKey(),
+                properties.livekitApiSecret())));
   }
 
   @PostMapping
@@ -84,30 +87,33 @@ class CallController {
     UserDto callee = userService.findById(calleeId);
 
     // Create caller session
-    CallSession callerSession = CallSession.builder()
-        .token(callerToken)
-        .video(isVideo)
-        .isCaller(true)
-        .calleeName(callee.firstName() + " " + callee.lastName())
-        .calleeAvatar(callee.avatar().url())
-        .room(room)
-        .userId(callerId)
-        .build();
+    CallSession callerSession =
+        CallSession.builder()
+            .token(callerToken)
+            .video(isVideo)
+            .isCaller(true)
+            .calleeName(callee.firstName() + " " + callee.lastName())
+            .calleeAvatar(callee.avatar().url())
+            .room(room)
+            .userId(callerId)
+            .build();
 
     // Create callee session
-    CallSession calleeSession = CallSession.builder()
-        .token(calleeToken)
-        .video(isVideo)
-        .isCaller(false)
-        .room(room)
-        .userId(calleeId)
-        .build();
+    CallSession calleeSession =
+        CallSession.builder()
+            .token(calleeToken)
+            .video(isVideo)
+            .isCaller(false)
+            .room(room)
+            .userId(calleeId)
+            .build();
 
     activeCalls.put(room + "-" + callerId, callerSession);
     activeCalls.put(room + "-" + calleeId, calleeSession);
 
     // Create call notification
-    CallNotification notification = new CallNotification(room, callerId, caller.firstName() + " " + caller.lastName());
+    CallNotification notification =
+        new CallNotification(room, callerId, caller.firstName() + " " + caller.lastName());
 
     messagingTemplate.convertAndSend("/topic/call/" + calleeId, notification);
 
@@ -139,10 +145,8 @@ class CallController {
     CallSession activeCallerCall = activeCalls.get(callerKey);
     CallSession activeCalleeCall = activeCalls.get(calleeKey);
 
-    if (activeCallerCall != null)
-      activeCalls.remove(callerKey);
-    if (activeCalleeCall != null)
-      activeCalls.remove(calleeKey);
+    if (activeCallerCall != null) activeCalls.remove(callerKey);
+    if (activeCalleeCall != null) activeCalls.remove(calleeKey);
 
     log.info("User {} reject call from {}", calleeId, callerId);
 
@@ -170,12 +174,13 @@ class CallController {
       return ResponseEntity.notFound().build();
     }
 
-    CallTokenResponse tokenResponse = new CallTokenResponse(
-        session.getToken(),
-        session.isVideo(),
-        session.isCaller(),
-        session.getCalleeName(),
-        session.getCalleeAvatar());
+    CallTokenResponse tokenResponse =
+        new CallTokenResponse(
+            session.getToken(),
+            session.isVideo(),
+            session.isCaller(),
+            session.getCalleeName(),
+            session.getCalleeAvatar());
 
     return ResponseEntity.ok(tokenResponse);
   }
