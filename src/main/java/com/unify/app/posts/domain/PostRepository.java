@@ -131,19 +131,28 @@ interface PostRepository extends JpaRepository<Post, String> {
       @Param("userId") String userId, Pageable pageable);
 
   @Query(
-      "SELECT new com.unify.app.posts.domain.models.PersonalizedPostDto"
-          + "("
-          + "p, "
-          + "COALESCE(COUNT(lp.id), 0) + COALESCE(COUNT(pc.id), 0), "
-          + "COALESCE(COUNT(pc.id), 0)"
-          + ")"
-          + "FROM Post p "
-          + "LEFT JOIN p.likedPosts lp "
-          + "LEFT JOIN p.comments pc "
-          + "WHERE p.status != 2 "
-          + "AND p.user.id != :userId "
-          + "GROUP BY p.id, p.captions, p.status, p.audience, p.postedAt, p.isCommentVisible, p.isLikeVisible "
-          + "ORDER BY p.postedAt DESC")
+      """
+                SELECT new com.unify.app.posts.domain.models.PersonalizedPostDto(
+                    p,
+                    COUNT(DISTINCT lp.id) + COUNT(DISTINCT pc.id),
+                    COUNT(DISTINCT pc.id)
+                )
+                FROM Post p
+                LEFT JOIN p.likedPosts lp
+                LEFT JOIN p.comments pc
+                WHERE p.status = 1
+                  AND p.user.id != :userId
+                GROUP BY p
+                ORDER BY
+                  CASE WHEN p.user.id IN (
+                      SELECT f.userFollowing.id FROM Follower f WHERE f.userFollower.id = :userId
+                  ) THEN 0 ELSE 1 END,
+                  CASE WHEN p.user.id NOT IN (
+                      SELECT f2.userFollowing.id FROM Follower f2 WHERE f2.userFollower.id = :userId
+                  ) THEN function('random') ELSE 1 END,
+                  p.postedAt DESC,
+                  COUNT(DISTINCT lp.id) + COUNT(DISTINCT pc.id) DESC
+            """)
   Page<PersonalizedPostDto> findPersonalizedPostsSimple(
       @Param("userId") String userId, Pageable pageable);
 

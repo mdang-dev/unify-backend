@@ -38,13 +38,20 @@ public class ApacheMailService {
     String form = loadEmailTemplate("templates/email-otp-form.html");
 
     if (form == null) {
-      log.error("Unable to send email due to template loading failure.");
-      return;
+      // Fallback to a minimal inline template to avoid breaking flow
+      log.warn("Template not found, using fallback inline template.");
+      form =
+          "<html><body>"
+              + "<h3>Your One-Time Password (OTP)</h3>"
+              + "<p><strong>${OTP_CODE}</strong></p>"
+              + "<p>If you did not request this, please ignore this email.</p>"
+              + "</body></html>";
     }
 
     // Replace {{OTP_CODE}} with actual OTP value
     Map<String, String> valuesMap = new HashMap<>();
     valuesMap.put("OTP_CODE", otp);
+    valuesMap.put("YEAR", String.valueOf(java.time.Year.now().getValue()));
 
     StringSubstitutor substitutor = new StringSubstitutor(valuesMap);
     String finalForm = substitutor.replace(form);
@@ -54,8 +61,13 @@ public class ApacheMailService {
       email.setHostName(host);
       email.setSmtpPort(port);
       email.setAuthentication(username, password);
-      email.setStartTLSRequired(true);
-      email.setSSLOnConnect(true); // Enable SSL for security
+      // Configure TLS/SSL depending on port
+      // 587 typically uses STARTTLS, 465 typically uses SSL
+      if (port == 465) {
+        email.setSSLOnConnect(true);
+      } else {
+        email.setStartTLSEnabled(true);
+      }
       email.setFrom(username);
       email.setSubject(subject);
       email.setHtmlMsg(finalForm);

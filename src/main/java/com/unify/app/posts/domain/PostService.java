@@ -10,9 +10,12 @@ import com.unify.app.posts.domain.models.PostDto;
 import com.unify.app.posts.domain.models.PostFeedResponse;
 import com.unify.app.posts.domain.models.PostFilterDto;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -207,9 +210,6 @@ public class PostService {
     Page<PersonalizedPostDto> personalizedPosts =
         postRepository.findPersonalizedPostsSimple(userId, pageable);
 
-    System.out.println("posts" + personalizedPosts.getContent());
-
-    // Convert to PostDto
     List<PostDto> postDtos =
         personalizedPosts.getContent().stream()
             .map(
@@ -220,7 +220,42 @@ public class PostService {
                 })
             .collect(Collectors.toList());
 
-    return new PostFeedResponse(postDtos, personalizedPosts.hasNext(), pageable.getPageNumber());
+    boolean hasNext = personalizedPosts.hasNext();
+
+    if (postDtos.isEmpty()) {
+      Page<PersonalizedPostDto> fallbackPosts =
+          postRepository.findPersonalizedPostsCombined(
+              userId, PageRequest.of(0, pageable.getPageSize()));
+
+      postDtos =
+          fallbackPosts.getContent().stream()
+              .map(
+                  dto -> {
+                    PostDto postDTO = mapper.toPostDto(dto.post());
+                    postDTO.setCommentCount(dto.commentCount());
+                    return postDTO;
+                  })
+              .collect(Collectors.toList());
+
+      hasNext = fallbackPosts.hasNext();
+    }
+
+    if (!hasNext || postDtos.size() < pageable.getPageSize()) {
+      int targetSize = pageable.getPageSize();
+      List<PostDto> pool = new ArrayList<>(postDtos);
+      if (!pool.isEmpty()) {
+        long seed = ((long) (userId == null ? 0 : userId.hashCode())) ^ pageable.getPageNumber();
+        Collections.shuffle(pool, new Random(seed));
+        List<PostDto> extended = new ArrayList<>(targetSize);
+        for (int i = 0; i < targetSize; i++) {
+          extended.add(pool.get(i % pool.size()));
+        }
+        postDtos = extended;
+        hasNext = true;
+      }
+    }
+
+    return new PostFeedResponse(postDtos, hasNext, pageable.getPageNumber());
   }
 
   public Page<PostDto> getReelsPosts(int page, int size) {
