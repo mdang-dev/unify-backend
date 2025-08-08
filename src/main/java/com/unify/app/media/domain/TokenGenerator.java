@@ -35,7 +35,8 @@ public class TokenGenerator {
         return TokenResponse.error("User not found");
       }
 
-      AccessToken token = new AccessToken(properties.livekitApiKey(), properties.livekitApiSecret());
+      AccessToken token =
+          new AccessToken(properties.livekitApiKey(), properties.livekitApiSecret());
 
       token.setIdentity(userId);
       token.setName(user.firstName() + " " + user.lastName());
@@ -68,7 +69,8 @@ public class TokenGenerator {
     }
 
     try {
-      AccessToken token = new AccessToken(properties.livekitApiKey(), properties.livekitApiSecret());
+      AccessToken token =
+          new AccessToken(properties.livekitApiKey(), properties.livekitApiSecret());
 
       token.setIdentity(user.id());
       token.setName(user.firstName() + " " + user.lastName());
