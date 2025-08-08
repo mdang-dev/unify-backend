@@ -8,5 +8,5 @@ public interface CommentMapper {
 
   Comment toComment(CommentDto commentDTO);
 
-  Comment toCommentDto(Comment comment);
+  CommentDto toCommentDto(Comment comment);
 }

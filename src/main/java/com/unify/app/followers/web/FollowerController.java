@@ -19,15 +19,26 @@ class FollowerController {
 
   @PostMapping("/{followingId}")
   public ResponseEntity<String> followUser(@PathVariable String followingId) {
-    String response = followService.followUser(followingId);
-
-    return ResponseEntity.ok(response);
+    try {
+      String response = followService.followUser(followingId);
+      return ResponseEntity.ok(response);
+    } catch (RuntimeException e) {
+      return ResponseEntity.badRequest().body(e.getMessage());
+    } catch (Exception e) {
+      return ResponseEntity.internalServerError().body("Internal server error");
+    }
   }
 
   @DeleteMapping("/{followingId}")
   public ResponseEntity<String> unfollowUser(@PathVariable String followingId) {
-    String response = followService.unfollowUser(followingId);
-    return ResponseEntity.ok(response);
+    try {
+      String response = followService.unfollowUser(followingId);
+      return ResponseEntity.ok(response);
+    } catch (RuntimeException e) {
+      return ResponseEntity.badRequest().body(e.getMessage());
+    } catch (Exception e) {
+      return ResponseEntity.internalServerError().body("Internal server error");
+    }
   }
 
   @GetMapping("/isFollowing/{followerId}/{followingId}")

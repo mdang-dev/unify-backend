@@ -64,6 +64,10 @@ public class FollowService {
   public String followUser(String followingId) {
     String currentUserId = securityService.getCurrentUserId();
 
+    if (currentUserId == null) {
+      throw new RuntimeException("User not authenticated");
+    }
+
     if (currentUserId.equals(followingId)) {
       return "Can't follow yourself!";
     }
@@ -97,6 +101,11 @@ public class FollowService {
   @Transactional
   public String unfollowUser(String followingId) {
     String currentUserId = securityService.getCurrentUserId();
+
+    if (currentUserId == null) {
+      throw new RuntimeException("User not authenticated");
+    }
+
     FollowerUserId id = new FollowerUserId(currentUserId, followingId);
 
     if (!followRepository.existsById(id)) {

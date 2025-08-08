@@ -29,7 +29,7 @@ public class CacheConfig implements BeanClassLoaderAware {
     this.loader = classLoader;
   }
 
-  @Bean(name = { "redisSerializer" })
+  @Bean(name = {"redisSerializer"})
   public RedisSerializer<Object> redisSerializer() {
     return new GenericJackson2JsonRedisSerializer(objectMapper());
   }
@@ -37,13 +37,14 @@ public class CacheConfig implements BeanClassLoaderAware {
   @Bean
   RedisCacheManager cacheManager(
       RedisConnectionFactory redisConnectionFactory, RedisSerializer<Object> serializer) {
-    RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
-        .serializeKeysWith(
-            RedisSerializationContext.SerializationPair.fromSerializer(
-                new StringRedisSerializer()))
-        .serializeValuesWith(
-            RedisSerializationContext.SerializationPair.fromSerializer(serializer))
-        .entryTtl(Duration.ofMinutes(1));
+    RedisCacheConfiguration cacheConfiguration =
+        RedisCacheConfiguration.defaultCacheConfig()
+            .serializeKeysWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                    new StringRedisSerializer()))
+            .serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(serializer))
+            .entryTtl(Duration.ofMinutes(1));
     return RedisCacheManager.builder(redisConnectionFactory)
         .cacheDefaults(cacheConfiguration)
         .build();
