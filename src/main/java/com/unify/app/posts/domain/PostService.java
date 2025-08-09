@@ -12,6 +12,7 @@ import com.unify.app.posts.domain.models.PostFilterDto;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -92,14 +93,47 @@ public class PostService {
     post.setIsLikeVisible(postDto.getIsLikeVisible());
 
     Set<Media> currentMedia = post.getMedia();
+    if (currentMedia == null) {
+      currentMedia = new HashSet<>();
+      post.setMedia(currentMedia);
+    }
+
     Set<MediaDto> updatedMediaDTOs = postDto.getMedia();
 
-    // Extract URLs from updated DTOs
-    Set<String> updatedUrls =
-        updatedMediaDTOs.stream().map(MediaDto::url).collect(Collectors.toSet());
+    if (updatedMediaDTOs != null) {
+      // Extract URLs from updated DTOs
+      Set<String> updatedUrls =
+          updatedMediaDTOs.stream().map(MediaDto::url).collect(Collectors.toSet());
 
-    // Identify and remove media that should no longer be associated
-    currentMedia.removeIf(media -> !updatedUrls.contains(media.getUrl()));
+      // Identify and remove media that should no longer be associated
+      currentMedia.removeIf(media -> !updatedUrls.contains(media.getUrl()));
+
+      // Build a quick lookup of existing URLs
+      Set<String> existingUrls =
+          currentMedia.stream().map(Media::getUrl).collect(Collectors.toSet());
+
+      // Add or update media from DTOs
+      for (MediaDto mediaDto : updatedMediaDTOs) {
+        if (!existingUrls.contains(mediaDto.url())) {
+          Media newMedia = mediaMapper.toMedia(mediaDto);
+          newMedia.setPost(post);
+          mediaRepository.save(newMedia);
+          currentMedia.add(newMedia);
+        } else {
+          // Update fields of existing media if needed
+          for (Media media : currentMedia) {
+            if (Objects.equals(media.getUrl(), mediaDto.url())) {
+              media.setFileType(mediaDto.fileType());
+              media.setSize(mediaDto.size());
+              media.setMediaType(mediaDto.mediaType());
+              break;
+            }
+          }
+        }
+      }
+    } else {
+      // If client sends null media set, keep existing media as-is
+    }
 
     Post updatedPost = postRepository.save(post);
 
