@@ -147,7 +147,8 @@ public class NotificationService {
       if (receiverId == null || receiverId.trim().isEmpty()) {
         return 0L;
       }
-      return notificationRepository.countByReceiverAndIsReadFalse(receiverId);
+      Long count = notificationRepository.countByReceiverAndIsReadFalse(receiverId);
+      return count != null ? count : 0L;
     } catch (Exception e) {
       log.error("Failed to get unread count for user {}: {}", receiverId, e.getMessage(), e);
       return 0L; // Return 0 instead of throwing to avoid breaking UI
@@ -160,7 +161,8 @@ public class NotificationService {
       if (receiverId == null || receiverId.trim().isEmpty() || type == null) {
         return 0L;
       }
-      return notificationRepository.countByReceiverAndTypeAndIsReadFalse(receiverId, type);
+      Long count = notificationRepository.countByReceiverAndTypeAndIsReadFalse(receiverId, type);
+      return count != null ? count : 0L;
     } catch (Exception e) {
       log.error(
           "Failed to get unread count by type for user {}: {}", receiverId, e.getMessage(), e);
