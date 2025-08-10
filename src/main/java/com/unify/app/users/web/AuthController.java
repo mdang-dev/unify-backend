@@ -1,25 +1,26 @@
 package com.unify.app.users.web;
 
 import com.unify.app.security.AuthenticationService;
-import com.unify.app.security.JwtService;
+import com.unify.app.security.CustomLogoutHandler;
 import com.unify.app.users.domain.AuthService;
 import com.unify.app.users.domain.UserService;
 import com.unify.app.users.domain.mail.ApacheMailService;
 import com.unify.app.users.domain.mail.OtpService;
 import com.unify.app.users.domain.models.ApiResponse;
-import com.unify.app.users.domain.models.TokenResponse;
 import com.unify.app.users.domain.models.UserDto;
 import com.unify.app.users.domain.models.auth.CreateUserCmd;
 import com.unify.app.users.domain.models.auth.ForgotPasswordRequest;
 import com.unify.app.users.domain.models.auth.ResetPasswordRequest;
 import com.unify.app.users.domain.models.auth.UserLoginCmd;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.annotation.Validated;
@@ -37,11 +38,10 @@ class AuthController {
 
   private final AuthService authService;
   private final UserService userService;
-  private final AuthenticationService authenticationService;
-  private final JwtService jwtService;
   private final ApacheMailService apacheMailService;
   private final OtpService otpService;
   private final PasswordEncoder passwordEncoder;
+  private final CustomLogoutHandler customLogoutHandler;
 
   @PostMapping("/login")
   ResponseEntity<?> login(@RequestBody UserLoginCmd userLoginDto) {
@@ -65,13 +65,22 @@ class AuthController {
     }
   }
 
-  @GetMapping("/users/refresh")
-  ResponseEntity<Object> refreshToken() {
-    String email = SecurityContextHolder.getContext().getAuthentication().getName();
-    var user = userService.findByEmail(email);
-    String token = jwtService.generateToken(email);
-    authenticationService.saveUserToken(user, token);
-    return ResponseEntity.status(200).body(new TokenResponse(token));
+  // @GetMapping("/users/refresh")
+  // ResponseEntity<Object> refreshToken() {
+  // String email =
+  // SecurityContextHolder.getContext().getAuthentication().getName();
+  // var user = userService.findByEmail(email);
+  // String token = jwtService.generateToken(email);
+  // authenticationService.saveUserToken(user, token);
+  // return ResponseEntity.status(200).body(new TokenResponse(token));
+  // }
+
+  @PostMapping("/logout")
+  public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response,
+      Authentication authentication) {
+    customLogoutHandler.logout(request, response, authentication);
+    SecurityContextHolder.clearContext();
+    return ResponseEntity.ok().build();
   }
 
   @GetMapping("/csrf")

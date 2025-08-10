@@ -2,6 +2,7 @@ package com.unify.app.users.domain;
 
 import com.unify.app.security.AuthenticationService;
 import com.unify.app.security.JwtService;
+import com.unify.app.security.TokenGenerared;
 import com.unify.app.users.domain.models.TokenResponse;
 import com.unify.app.users.domain.models.auth.UserLoginCmd;
 import java.util.Map;
@@ -31,14 +32,13 @@ public class AuthService {
 
     if (cmd.email().equals(user.getEmail())
         && isMatchesPassword(user.getPassword(), cmd.password())) {
-      authentication =
-          authenticationManager.authenticate(
-              new UsernamePasswordAuthenticationToken(cmd.email(), cmd.password()));
+      authentication = authenticationManager.authenticate(
+          new UsernamePasswordAuthenticationToken(cmd.email(), cmd.password()));
       SecurityContextHolder.getContext().setAuthentication(authentication);
 
-      String tokenGenerated = jwtService.generateToken(cmd.email());
-      authenticationService.saveUserToken(user, tokenGenerated);
-      return new TokenResponse(tokenGenerated);
+      TokenGenerared tokenGenerated = jwtService.generateToken(cmd.email());
+      authenticationService.saveUserToken(user, tokenGenerated.jti(), tokenGenerated.token());
+      return new TokenResponse(tokenGenerated.token());
     }
     return null;
   }

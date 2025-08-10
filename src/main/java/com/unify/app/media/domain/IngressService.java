@@ -55,7 +55,7 @@ public class IngressService {
                   null, // audioOptions (default)
                   isWhipInput ? videoOptions : null, // videoOptions
                   isWhipInput, // bypassTranscoding
-                  true // enableTranscoding
+                  isWhipInput // enableTranscoding
                   )
               .execute();
 
@@ -63,6 +63,7 @@ public class IngressService {
         throw new IllegalStateException("Ingress creation failed: " + response.code());
 
       var ingress = response.body();
+
       return Map.of(
           "url", ingress.getUrl(),
           "key", ingress.getStreamKey());
@@ -108,7 +109,7 @@ public class IngressService {
                   isWhipInput ? audioOptions : null, // audioOptions (default)
                   isWhipInput ? videoOptions : null, // videoOptions
                   isWhipInput, // bypassTranscoding
-                  true // enableTranscoding
+                  isWhipInput // enableTranscoding
                   )
               .execute();
 
