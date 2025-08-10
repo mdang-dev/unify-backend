@@ -21,11 +21,15 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 @Table(name = "tokens")
+
 class Token implements Serializable {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   String id;
+
+  @Column(nullable = false)
+  String jti;
 
   @Column(nullable = false)
   String token;
