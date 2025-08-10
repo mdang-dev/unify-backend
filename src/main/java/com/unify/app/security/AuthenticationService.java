@@ -9,15 +9,15 @@ import org.springframework.stereotype.Service;
 public class AuthenticationService {
 
   private final TokenRepository tokenRepository;
+  private final SecurityService securityService;
 
-  public void saveUserToken(User user, String jwtToken) {
-    revokeAllUserTokens(user);
-    Token token = Token.builder().user(user).token(jwtToken).expired(false).revoked(false).build();
+  public void saveUserToken(User user, String jti, String jwtToken) {
+    Token token = Token.builder().user(user).jti(jti).token(jwtToken).expired(false).revoked(false).build();
     tokenRepository.save(token);
   }
 
-  private void revokeAllUserTokens(User user) {
-    var validUserTokens = tokenRepository.findAllValidTokensByUser(user.getId());
+  public void revokeAllUserTokens() {
+    var validUserTokens = tokenRepository.findAllValidTokensByUser(securityService.getCurrentUserId());
     if (validUserTokens.isEmpty()) {
       return;
     }
@@ -27,5 +27,12 @@ public class AuthenticationService {
           t.setRevoked(true);
         });
     tokenRepository.saveAll(validUserTokens);
+  }
+
+  public void processTokenCleanup() {
+    var expiredTokens = tokenRepository.findAllInvalidTokensByUser(securityService.getCurrentUserId());
+    if (!expiredTokens.isEmpty()) {
+      tokenRepository.deleteAll(expiredTokens);
+    }
   }
 }

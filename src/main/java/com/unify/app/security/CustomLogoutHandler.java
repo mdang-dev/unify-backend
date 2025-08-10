@@ -14,6 +14,7 @@ import org.springframework.util.StringUtils;
 public class CustomLogoutHandler implements LogoutHandler {
 
   private final TokenRepository tokenRepository;
+  private final JwtService jwtService;
 
   @Override
   public void logout(
@@ -24,11 +25,13 @@ public class CustomLogoutHandler implements LogoutHandler {
       return;
     }
     String token = authHeader.substring(7);
-    var storedToken = tokenRepository.findByToken(token).orElse(null);
+    String jti = jwtService.extractJti(token);
+    var storedToken = tokenRepository.findByJti(jti).orElse(null);
     if (storedToken != null) {
       storedToken.setExpired(true);
       storedToken.setRevoked(true);
       tokenRepository.save(storedToken);
     }
   }
+
 }

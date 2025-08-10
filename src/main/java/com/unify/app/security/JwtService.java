@@ -10,52 +10,43 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.unify.app.users.domain.User;
-import com.unify.app.users.domain.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.StringJoiner;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 @Service
 public class JwtService {
 
-  @Value("${jwt.signerKey}")
+  @Value("${jwt.signer-key}")
   private String singerKey;
 
-  private final UserService userService;
+  @Value("${jwt.expiration-time-in-days}")
+  private int expirationTimeInDays;
 
-  JwtService(@Lazy UserService userService) {
-    this.userService = userService;
-  }
-
-  public String generateToken(String email) {
-
-    User user = userService.findByEmail(email);
-
+  public TokenGenerared generateToken(String email) {
+    String jti = UUID.randomUUID().toString();
     JWSHeader header = new JWSHeader(JWSAlgorithm.HS256);
-    JWTClaimsSet claimsSet =
-        new JWTClaimsSet.Builder()
-            .subject(email)
-            .issuer("unify.com")
-            .claim("scope", buildScope(user))
-            .issueTime(new Date())
-            .expirationTime(new Date(Instant.now().plus(7, ChronoUnit.DAYS).toEpochMilli()))
-            .build();
+    JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+        .subject(email)
+        .jwtID(jti)
+        .issuer("unify.com")
+        .issueTime(new Date())
+        .expirationTime(new Date(Instant.now().plus(expirationTimeInDays, ChronoUnit.DAYS).toEpochMilli()))
+        .build();
 
     Payload payload = new Payload(claimsSet.toJSONObject());
     JWSObject jwsObject = new JWSObject(header, payload);
     try {
       jwsObject.sign(new MACSigner(singerKey.getBytes()));
-      return jwsObject.serialize();
+      return new TokenGenerared(jti, jwsObject.serialize());
     } catch (JOSEException e) {
       throw new RuntimeException(e);
     }
@@ -95,15 +86,13 @@ public class JwtService {
     }
   }
 
-  private String buildScope(User user) {
-    StringJoiner joiner = new StringJoiner(" ");
-    if (!CollectionUtils.isEmpty(user.getRoles())) {
-      user.getRoles()
-          .forEach(
-              role -> {
-                joiner.add("ROLE_" + role.getName());
-              });
+  public String extractJti(String token) {
+    try {
+      SignedJWT signed = SignedJWT.parse(token);
+      return signed.getJWTClaimsSet().getJWTID();
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
     }
-    return joiner.toString();
   }
+
 }

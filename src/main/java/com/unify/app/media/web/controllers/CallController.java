@@ -1,7 +1,6 @@
 package com.unify.app.media.web.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.unify.app.ApplicationProperties;
 import com.unify.app.media.domain.TokenGenerator;
 import com.unify.app.media.domain.models.AcceptCallDto;
 import com.unify.app.media.domain.models.CallActionResponse;
@@ -10,18 +9,15 @@ import com.unify.app.media.domain.models.CallRequest;
 import com.unify.app.media.domain.models.CallResponse;
 import com.unify.app.media.domain.models.CallSession;
 import com.unify.app.media.domain.models.CallTokenResponse;
-import com.unify.app.media.domain.models.DebugUrlDto;
 import com.unify.app.media.domain.models.RejectCallDto;
 import com.unify.app.users.domain.UserService;
 import com.unify.app.users.domain.models.UserDto;
 import jakarta.validation.Valid;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -43,34 +39,7 @@ class CallController {
   private final SimpMessagingTemplate messagingTemplate;
   private final TokenGenerator tokenGenerator;
   private final UserService userService;
-  private final ApplicationProperties properties;
-
-  @Value("${unify.livekit-host}")
-  private String livekitHost;
-
-  @Value("${unify.livekit-api-key}")
-  private String livekitApiKey;
-
-  @Value("${unify.livekit-ws-url}")
-  private String livekitWsUrl;
-
-  @Value("${unify.livekit-api-secret}")
-  private String livekitApiSecret;
-
   private Map<String, CallSession> activeCalls = new HashMap<>();
-
-  @GetMapping("/debug")
-  public ResponseEntity<?> debug() {
-    return ResponseEntity.ok(
-        List.of(
-            new DebugUrlDto("value", livekitHost, livekitWsUrl, livekitApiKey, livekitApiSecret),
-            new DebugUrlDto(
-                "properites",
-                properties.livekitHost(),
-                properties.livekitWsUrl(),
-                properties.livekitApiKey(),
-                properties.livekitApiSecret())));
-  }
 
   @PostMapping
   public ResponseEntity<CallResponse> startCall(@Valid @RequestBody CallRequest request)
