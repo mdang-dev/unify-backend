@@ -16,9 +16,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Collation;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -33,17 +30,11 @@ public class MessageService {
 
   @Cacheable(value = "messages", key = "#sender + '-' + #receiver")
   public List<MessageDto> getMessagesBySenderAndReceiver(String sender, String receiver) {
-    Query query = new Query();
-    query.addCriteria(
-        new Criteria()
-            .orOperator(
-                Criteria.where("sender").is(sender).and("receiver").is(receiver),
-                Criteria.where("sender").is(receiver).and("receiver").is(sender)));
-    query.collation(Collation.of("en"));
-    query.with(Sort.by(Sort.Direction.ASC, "timestamp"));
-    return mongoTemplate.find(query, Message.class).stream()
-        .map(mapper::toDto)
-        .collect(Collectors.toList());
+    // Use repository method with compound indexes for faster access
+    List<Message> list =
+        messageRepository.findConversationAsc(
+            sender, receiver, Sort.by(Sort.Direction.ASC, "timestamp"));
+    return list.stream().map(mapper::toDto).collect(Collectors.toList());
   }
 
   // ✅ PRODUCTION FIX: Remove caching to prevent race conditions and stale data

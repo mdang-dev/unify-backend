@@ -112,21 +112,16 @@ public class UserService {
   public UserDto findByIdSafe(String id) {
     try {
       if (id == null || id.trim().isEmpty()) {
-        System.err.println("Error: User ID is null or empty");
         return null;
       }
 
-      var user = userRepository.findById(id).orElse(null);
-      if (user == null) {
-        System.err.println("User not found in database for ID: " + id);
+      // Fast negative path: avoid expensive mapping/logging on misses
+      if (!userRepository.existsById(id)) {
         return null;
       }
 
-      return userMapper.toUserDTO(user);
+      return userRepository.findById(id).map(userMapper::toUserDTO).orElse(null);
     } catch (Exception e) {
-      System.err.println("Error finding user by ID: " + id + " - " + e.getMessage());
-      System.err.println("Error type: " + e.getClass().getSimpleName());
-      e.printStackTrace();
       return null;
     }
   }
