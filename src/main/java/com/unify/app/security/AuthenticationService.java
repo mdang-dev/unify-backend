@@ -12,12 +12,14 @@ public class AuthenticationService {
   private final SecurityService securityService;
 
   public void saveUserToken(User user, String jti, String jwtToken) {
-    Token token = Token.builder().user(user).jti(jti).token(jwtToken).expired(false).revoked(false).build();
+    Token token =
+        Token.builder().user(user).jti(jti).token(jwtToken).expired(false).revoked(false).build();
     tokenRepository.save(token);
   }
 
   public void revokeAllUserTokens() {
-    var validUserTokens = tokenRepository.findAllValidTokensByUser(securityService.getCurrentUserId());
+    var validUserTokens =
+        tokenRepository.findAllValidTokensByUser(securityService.getCurrentUserId());
     if (validUserTokens.isEmpty()) {
       return;
     }
@@ -30,7 +32,8 @@ public class AuthenticationService {
   }
 
   public void processTokenCleanup() {
-    var expiredTokens = tokenRepository.findAllInvalidTokensByUser(securityService.getCurrentUserId());
+    var expiredTokens =
+        tokenRepository.findAllInvalidTokensByUser(securityService.getCurrentUserId());
     if (!expiredTokens.isEmpty()) {
       tokenRepository.deleteAll(expiredTokens);
     }

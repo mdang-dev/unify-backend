@@ -28,17 +28,17 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
   private final String[] ACCESS_ENDPOINTS = {
-      "/auth/**",
-      "/ws/**",
-      "/send-email",
-      "/liked-posts",
-      "/users/logout",
-      "/webhooks/livekit",
-      "/actuator/**",
-      "/swagger-ui/**",
-      "/v3/api-docs/**",
-      "/swagger-resources/**",
-      "/webjars/**",
+    "/auth/**",
+    "/ws/**",
+    "/send-email",
+    "/liked-posts",
+    "/users/logout",
+    "/webhooks/livekit",
+    "/actuator/**",
+    "/swagger-ui/**",
+    "/v3/api-docs/**",
+    "/swagger-resources/**",
+    "/webjars/**",
   };
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
   private final CustomUserDetailsService customUserDetailsService;
@@ -49,7 +49,6 @@ public class SecurityConfig {
       CustomLogoutHandler logoutHandler) {
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     this.customUserDetailsService = customUserDetailsService;
-
   }
 
   @Bean
@@ -58,16 +57,18 @@ public class SecurityConfig {
     return http.csrf(AbstractHttpConfigurer::disable)
         .cors(Customizer.withDefaults())
         .authorizeHttpRequests(
-            authorize -> authorize
-                .requestMatchers(ACCESS_ENDPOINTS)
-                .permitAll()
-                .anyRequest()
-                .authenticated())
+            authorize ->
+                authorize
+                    .requestMatchers(ACCESS_ENDPOINTS)
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
         .userDetailsService(customUserDetailsService)
         .exceptionHandling(
-            ex -> ex.accessDeniedHandler(
-                (request, response, accessDeniedException) -> response.setStatus(403))
-                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+            ex ->
+                ex.accessDeniedHandler(
+                        (request, response, accessDeniedException) -> response.setStatus(403))
+                    .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .httpBasic(Customizer.withDefaults())

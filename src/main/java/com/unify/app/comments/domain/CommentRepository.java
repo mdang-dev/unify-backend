@@ -2,8 +2,6 @@ package com.unify.app.comments.domain;
 
 import io.lettuce.core.dynamic.annotation.Param;
 import java.util.List;
-import java.util.Optional;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -44,6 +42,4 @@ interface CommentRepository extends JpaRepository<Comment, String> {
 
   @Query("SELECT COUNT(pc) FROM Comment pc WHERE pc.post.id = :postId AND pc.status = :status")
   long countByPostIdAndStatus(@Param("postId") String postId, @Param("status") Integer status);
-
-
 }

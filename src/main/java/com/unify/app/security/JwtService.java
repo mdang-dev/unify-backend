@@ -16,7 +16,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -34,13 +33,15 @@ public class JwtService {
   public TokenGenerared generateToken(String email) {
     String jti = UUID.randomUUID().toString();
     JWSHeader header = new JWSHeader(JWSAlgorithm.HS256);
-    JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-        .subject(email)
-        .jwtID(jti)
-        .issuer("unify.com")
-        .issueTime(new Date())
-        .expirationTime(new Date(Instant.now().plus(expirationTimeInDays, ChronoUnit.DAYS).toEpochMilli()))
-        .build();
+    JWTClaimsSet claimsSet =
+        new JWTClaimsSet.Builder()
+            .subject(email)
+            .jwtID(jti)
+            .issuer("unify.com")
+            .issueTime(new Date())
+            .expirationTime(
+                new Date(Instant.now().plus(expirationTimeInDays, ChronoUnit.DAYS).toEpochMilli()))
+            .build();
 
     Payload payload = new Payload(claimsSet.toJSONObject());
     JWSObject jwsObject = new JWSObject(header, payload);
@@ -94,5 +95,4 @@ public class JwtService {
       throw new RuntimeException(e);
     }
   }
-
 }

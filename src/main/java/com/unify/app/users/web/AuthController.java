@@ -1,6 +1,5 @@
 package com.unify.app.users.web;
 
-import com.unify.app.security.AuthenticationService;
 import com.unify.app.security.CustomLogoutHandler;
 import com.unify.app.users.domain.AuthService;
 import com.unify.app.users.domain.UserService;
@@ -76,8 +75,8 @@ class AuthController {
   // }
 
   @PostMapping("/logout")
-  public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response,
-      Authentication authentication) {
+  public ResponseEntity<Void> logout(
+      HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
     customLogoutHandler.logout(request, response, authentication);
     SecurityContextHolder.clearContext();
     return ResponseEntity.ok().build();

@@ -37,14 +37,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     try {
-      var isTokenValid = tokenRepository
-          .findByToken(token)
-          .map(t -> !t.getExpired() && !t.getRevoked())
-          .orElse(false);
+      var isTokenValid =
+          tokenRepository
+              .findByToken(token)
+              .map(t -> !t.getExpired() && !t.getRevoked())
+              .orElse(false);
 
-      if (StringUtils.hasText(token)
-          && jwtService.validToken(token)
-          && isTokenValid) {
+      if (StringUtils.hasText(token) && jwtService.validToken(token) && isTokenValid) {
 
         String email = jwtService.extractUsername(token);
         if (email == null || email.isEmpty()) {
@@ -56,8 +55,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
           throw new RuntimeException("User not found for the given token");
         }
 
-        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-            userDetails, null, userDetails.getAuthorities());
+        UsernamePasswordAuthenticationToken authToken =
+            new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authToken);
       }

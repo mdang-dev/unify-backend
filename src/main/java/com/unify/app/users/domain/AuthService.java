@@ -32,8 +32,9 @@ public class AuthService {
 
     if (cmd.email().equals(user.getEmail())
         && isMatchesPassword(user.getPassword(), cmd.password())) {
-      authentication = authenticationManager.authenticate(
-          new UsernamePasswordAuthenticationToken(cmd.email(), cmd.password()));
+      authentication =
+          authenticationManager.authenticate(
+              new UsernamePasswordAuthenticationToken(cmd.email(), cmd.password()));
       SecurityContextHolder.getContext().setAuthentication(authentication);
 
       TokenGenerared tokenGenerated = jwtService.generateToken(cmd.email());
