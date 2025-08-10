@@ -7,35 +7,33 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public record CommentDto(
-    String id,
-    String content,
-    String userId,
-    String postId,
-    String username,
-    String avatarUrl,
-    String parentId,
-    Integer status,
-    @JsonFormat(
-            shape = JsonFormat.Shape.STRING,
-            pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-            timezone = "UTC")
+        String id,
+        String content,
+        String userId,
+        String postId,
+        String username,
+        String avatarUrl,
+        String parentId,
+        Integer status,
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
         LocalDateTime commentedAt,
-    List<CommentDto> replies)
-    implements Serializable {
+        List<CommentDto> replies) {
 
-  public CommentDto(Comment comment) {
-    this(
-        comment.getId(),
-        comment.getContent(),
-        comment.getUser().getId(),
-        comment.getPost().getId(),
-        comment.getUser().getUsername(),
-        comment.getUser().latestAvatar() != null ? comment.getUser().latestAvatar().getUrl() : null,
-        comment.getParent() != null ? comment.getParent().getId() : null,
-        comment.getStatus(),
-        comment.getCommentedAt(),
-        comment.getReplies() == null
-            ? List.of()
-            : comment.getReplies().stream().map(CommentDto::new).collect(Collectors.toList()));
-  }
+    public CommentDto(Comment comment) {
+        this(
+                comment.getId(),
+                comment.getContent(),
+                comment.getUser() != null ? comment.getUser().getId() : null,
+                comment.getPost() != null ? comment.getPost().getId() : null,
+                comment.getUser() != null ? comment.getUser().getUsername() : null,
+                comment.getUser() != null && comment.getUser().latestAvatar() != null
+                        ? comment.getUser().latestAvatar().getUrl() : null,
+                comment.getParent() != null ? comment.getParent().getId() : null,
+                comment.getStatus(),
+                comment.getCommentedAt(),
+                comment.getReplies() == null
+                        ? List.of()
+                        : comment.getReplies().stream().map(CommentDto::new).collect(Collectors.toList())
+        );
+    }
 }

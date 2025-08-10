@@ -131,7 +131,7 @@ public class ReportService {
 
       case USER -> userMapper.toUserDTO(userService.findUserById(reportedId));
 
-      case COMMENT -> commentMapper.toCommentDto(commentService.findById(reportedId));
+      case COMMENT -> commentMapper.toCommentDTO(commentService.findById(reportedId));
     };
   }
 
