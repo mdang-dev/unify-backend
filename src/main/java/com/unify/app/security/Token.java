@@ -21,7 +21,6 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 @Table(name = "tokens")
-
 class Token implements Serializable {
 
   @Id

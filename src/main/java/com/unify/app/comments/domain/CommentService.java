@@ -188,8 +188,9 @@ public class CommentService {
   }
 
   public Comment findById(String id) {
-    return commentRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Comment not found: " + id));
+    return commentRepository
+        .findById(id)
+        .orElseThrow(() -> new IllegalArgumentException("Comment not found: " + id));
   }
 
   public Comment update(Comment comment) {
