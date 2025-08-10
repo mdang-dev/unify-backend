@@ -309,7 +309,6 @@ public class PostService {
       String captions,
       Integer status,
       Audience audience,
-      LocalDateTime postedAt,
       Boolean isCommentVisible,
       Boolean isLikeVisible,
       Set<HashtagDetailDto> hashtags,
@@ -325,7 +324,6 @@ public class PostService {
             captions,
             status,
             audience,
-            postedAt,
             isCommentVisible,
             isLikeVisible,
             commentCount,
@@ -334,8 +332,6 @@ public class PostService {
 
     return filteredPosts.map(
         result -> {
-          // Since we're using native query, we need to manually map the result
-          // The result contains all Post fields as Object[]
           Post post = new Post();
           post.setId((String) result[0]);
           post.setCaptions((String) result[1]);
@@ -356,7 +352,6 @@ public class PostService {
         filterDto.captions(),
         filterDto.status(),
         filterDto.audience(),
-        filterDto.postedAt(),
         filterDto.isCommentVisible(),
         filterDto.isLikeVisible(),
         filterDto.hashtags(),

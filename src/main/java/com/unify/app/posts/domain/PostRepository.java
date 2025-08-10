@@ -203,9 +203,8 @@ interface PostRepository extends JpaRepository<Post, String> {
                 WHERE (:captions IS NULL OR LOWER(CAST(p.captions AS TEXT)) LIKE LOWER(CONCAT('%', :captions, '%')))
                 AND (:status IS NULL OR p.status = :status)
                 AND (:audience IS NULL OR p.audience = :audience)
-                AND (:postedAt IS NULL OR DATE(p.posted_at) = DATE(:postedAt))
-                AND (:isCommentVisible IS NULL OR p.is_comment_visible = :isCommentVisible)
-                AND (:isLikeVisible IS NULL OR p.is_like_visible = :isLikeVisible)
+                AND (:isCommentVisible IS NULL OR p.is_comment_visible = CAST(:isCommentVisible AS boolean))
+                AND (:isLikeVisible IS NULL OR p.is_like_visible = CAST(:isLikeVisible AS boolean))
                 GROUP BY p.id, p.captions, p.status, p.audience, p.posted_at, p.is_comment_visible, p.is_like_visible, p.updated_at, p.user_id
                 HAVING (:commentCount IS NULL OR
                     CASE
@@ -225,9 +224,8 @@ interface PostRepository extends JpaRepository<Post, String> {
                 WHERE (:captions IS NULL OR LOWER(CAST(p.captions AS TEXT)) LIKE LOWER(CONCAT('%', :captions, '%')))
                 AND (:status IS NULL OR p.status = :status)
                 AND (:audience IS NULL OR p.audience = :audience)
-                AND (:postedAt IS NULL OR DATE(p.posted_at) = DATE(:postedAt))
-                AND (:isCommentVisible IS NULL OR p.is_comment_visible = :isCommentVisible)
-                AND (:isLikeVisible IS NULL OR p.is_like_visible = :isLikeVisible)
+                AND (:isCommentVisible IS NULL OR p.is_comment_visible = CAST(:isCommentVisible AS boolean))
+                AND (:isLikeVisible IS NULL OR p.is_like_visible = CAST(:isLikeVisible AS boolean))
                 AND (:commentCount IS NULL OR
                     CASE
                         WHEN :commentCountOperator = '>' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) > :commentCount
@@ -243,7 +241,6 @@ interface PostRepository extends JpaRepository<Post, String> {
       @Param("captions") String captions,
       @Param("status") Integer status,
       @Param("audience") Audience audience,
-      @Param("postedAt") LocalDateTime postedAt,
       @Param("isCommentVisible") Boolean isCommentVisible,
       @Param("isLikeVisible") Boolean isLikeVisible,
       @Param("commentCount") Long commentCount,
