@@ -8,6 +8,7 @@ import com.unify.app.posts.domain.PostMapper;
 import com.unify.app.posts.domain.PostService;
 import com.unify.app.reports.domain.models.EntityType;
 import com.unify.app.reports.domain.models.ReportDto;
+import com.unify.app.reports.domain.models.ReportSummaryDto;
 import com.unify.app.users.domain.User;
 import com.unify.app.users.domain.UserMapper;
 import com.unify.app.users.domain.UserService;
@@ -15,6 +16,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -246,5 +249,37 @@ public class ReportService {
         throw new ReportException("Invalid report status: " + status);
       }
     }
+  }
+
+  /**
+   * Get distinct reported posts with aggregated report information
+   *
+   * @param status Filter by report status (optional)
+   * @param reportedAtFrom Filter by reportedAt start date (optional)
+   * @param reportedAtTo Filter by reportedAt end date (optional)
+   * @param pageable Pagination and sorting parameters
+   * @return Page of ReportSummaryDto for posts
+   */
+  public Page<ReportSummaryDto> findDistinctReportedPosts(
+      Integer status, LocalDateTime reportedAtFrom, LocalDateTime reportedAtTo, Pageable pageable) {
+
+    return reportRepository.findDistinctReportedPosts(
+        status, reportedAtFrom, reportedAtTo, pageable);
+  }
+
+  /**
+   * Get distinct reported users with aggregated report information
+   *
+   * @param status Filter by report status (optional)
+   * @param reportedAtFrom Filter by reportedAt start date (optional)
+   * @param reportedAtTo Filter by reportedAt end date (optional)
+   * @param pageable Pagination and sorting parameters
+   * @return Page of ReportSummaryDto for users
+   */
+  public Page<ReportSummaryDto> findDistinctReportedUsers(
+      Integer status, LocalDateTime reportedAtFrom, LocalDateTime reportedAtTo, Pageable pageable) {
+
+    return reportRepository.findDistinctReportedUsers(
+        status, reportedAtFrom, reportedAtTo, pageable);
   }
 }

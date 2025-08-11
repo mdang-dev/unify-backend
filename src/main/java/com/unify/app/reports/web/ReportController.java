@@ -1,14 +1,21 @@
 package com.unify.app.reports.web;
 
+import com.unify.app.common.models.PagedResponse;
 import com.unify.app.reports.domain.ReportService;
 import com.unify.app.reports.domain.models.AdminReportActionDto;
 import com.unify.app.reports.domain.models.EntityType;
 import com.unify.app.reports.domain.models.ReportDto;
+import com.unify.app.reports.domain.models.ReportSummaryDto;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -115,5 +122,69 @@ public class ReportController {
   public ResponseEntity<String> removeReport(@PathVariable String id) {
     reportService.removeReport(id);
     return ResponseEntity.ok("Remove Report Successfully!");
+  }
+
+  /**
+   * Admin endpoint to get distinct reported posts with aggregated data
+   *
+   * @param status Filter by report status (optional)
+   * @param reportedAtFrom Filter by reportedAt start date (optional, ISO format)
+   * @param reportedAtTo Filter by reportedAt end date (optional, ISO format)
+   * @param page Page number (default 0)
+   * @param size Page size (default 20)
+   * @param sort Sort criteria (default: latestReportedAt,desc)
+   * @return PagedResponse of ReportSummaryDto for posts
+   */
+  @GetMapping("/admin/targets/posts")
+  public ResponseEntity<PagedResponse<ReportSummaryDto>> getDistinctReportedPosts(
+      @RequestParam(required = false) Integer status,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          LocalDateTime reportedAtFrom,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          LocalDateTime reportedAtTo,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size,
+      @RequestParam(defaultValue = "latestReportedAt,desc") String sort) {
+
+    // Note: Sorting is handled directly in the query (ORDER BY MAX(r.reportedAt) DESC)
+    // to avoid issues with aggregate fields not being recognized by Pageable
+    Pageable pageable = PageRequest.of(page, size);
+
+    Page<ReportSummaryDto> result =
+        reportService.findDistinctReportedPosts(status, reportedAtFrom, reportedAtTo, pageable);
+
+    return ResponseEntity.ok(PagedResponse.from(result));
+  }
+
+  /**
+   * Admin endpoint to get distinct reported users with aggregated data
+   *
+   * @param status Filter by report status (optional)
+   * @param reportedAtFrom Filter by reportedAt start date (optional, ISO format)
+   * @param reportedAtTo Filter by reportedAt end date (optional, ISO format)
+   * @param page Page number (default 0)
+   * @param size Page size (default 20)
+   * @param sort Sort criteria (default: latestReportedAt,desc)
+   * @return PagedResponse of ReportSummaryDto for users
+   */
+  @GetMapping("/admin/targets/users")
+  public ResponseEntity<PagedResponse<ReportSummaryDto>> getDistinctReportedUsers(
+      @RequestParam(required = false) Integer status,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          LocalDateTime reportedAtFrom,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+          LocalDateTime reportedAtTo,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size,
+      @RequestParam(defaultValue = "latestReportedAt,desc") String sort) {
+
+    // Note: Sorting is handled directly in the query (ORDER BY MAX(r.reportedAt) DESC)
+    // to avoid issues with aggregate fields not being recognized by Pageable
+    Pageable pageable = PageRequest.of(page, size);
+
+    Page<ReportSummaryDto> result =
+        reportService.findDistinctReportedUsers(status, reportedAtFrom, reportedAtTo, pageable);
+
+    return ResponseEntity.ok(PagedResponse.from(result));
   }
 }
