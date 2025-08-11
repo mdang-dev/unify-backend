@@ -75,8 +75,8 @@ public class CommentService {
 
       Comment savedComment = commentRepository.save(newComment);
 
-      // ✅ NEW: Send notification for comment
-      sendCommentNotification(userId, post, parent);
+      // ✅ NEW: Send notification for comment AFTER saving to get the real comment ID
+      sendCommentNotification(userId, post, savedComment, parent);
 
       log.info("Saved comment with ID: {} for post: {}", savedComment.getId(), postId);
       return savedComment;
@@ -87,7 +87,8 @@ public class CommentService {
   }
 
   // ✅ NEW: Send comment notification
-  private void sendCommentNotification(String commenterId, Post post, Comment parent) {
+  private void sendCommentNotification(
+      String commenterId, Post post, Comment savedComment, Comment parent) {
     try {
       String postAuthorId = post.getUser().getId();
 
@@ -112,6 +113,11 @@ public class CommentService {
       String message = generateCommentMessage(commenterId, parent != null);
       String link = "/posts/" + post.getId();
 
+      // ✅ NEW: Create JSON data with actual commentId and postId
+      String data =
+          String.format(
+              "{\"commentId\":\"%s\",\"postId\":\"%s\"}", savedComment.getId(), post.getId());
+
       log.debug(
           "Sending comment notification: user {} commented on post {} by user {}",
           commenterId,
@@ -119,7 +125,7 @@ public class CommentService {
           notificationReceiverId);
 
       notificationService.createAndSendNotification(
-          commenterId, notificationReceiverId, NotificationType.COMMENT, message, link);
+          commenterId, notificationReceiverId, NotificationType.COMMENT, message, link, data);
     } catch (Exception e) {
       log.error("Failed to send comment notification: {}", e.getMessage(), e);
       // Don't throw exception to avoid breaking comment creation

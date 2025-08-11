@@ -19,6 +19,7 @@ public class NotificationDto implements Serializable {
   LocalDateTime timestamp;
   @Default boolean isRead = false;
   String link;
+  String data; // ✅ ADDED: Store JSON data like commentId, postId
 
   @Getter
   @Setter

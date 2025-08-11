@@ -27,6 +27,8 @@ public abstract class NotificationMapper {
         .type(notification.getType())
         .timestamp(notification.getTimestamp())
         .isRead(notification.isRead())
+        .link(notification.getLink())
+        .data(notification.getData())
         .build();
   }
 
