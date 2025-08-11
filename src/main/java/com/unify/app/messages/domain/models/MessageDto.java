@@ -1,7 +1,9 @@
 package com.unify.app.messages.domain.models;
 
+import com.unify.app.common.utils.DateTimeUtils;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.bson.types.ObjectId;
 
 public record MessageDto(
     String id,
@@ -10,16 +12,23 @@ public record MessageDto(
     String content,
     LocalDateTime timestamp,
     List<String> fileUrls,
-    MessageType type) {
+    MessageType type,
+    String clientTempId) {
 
   public static MessageDto withCurrentTimestamp(MessageDto message) {
+    // Ensure a server-generated id exists to keep ordering stable across clients before persistence
+    String ensuredId =
+        (message.id() == null || message.id().isBlank())
+            ? new ObjectId().toHexString()
+            : message.id();
     return new MessageDto(
-        message.id(),
+        ensuredId,
         message.sender(),
         message.receiver(),
         message.content(),
-        LocalDateTime.now(),
+        DateTimeUtils.nowVietnam(),
         message.fileUrls(),
-        message.type());
+        message.type(),
+        message.clientTempId());
   }
 }
