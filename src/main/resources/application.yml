@@ -5,7 +5,6 @@ spring:
   application:
     name: unify-backend
 
-  # Cấu hình timezone cho toàn bộ ứng dụng
   jackson:
     time-zone: Asia/Ho_Chi_Minh
     default-property-inclusion: non_null
