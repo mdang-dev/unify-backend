@@ -156,44 +156,44 @@ interface PostRepository extends JpaRepository<Post, String> {
   Page<PersonalizedPostDto> findPersonalizedPostsSimple(
       @Param("userId") String userId, Pageable pageable);
 
-  @Query(
-      """
-                SELECT p, COUNT(pc)
-                FROM Post p
-                LEFT JOIN p.comments pc
-                WHERE p.status != 2
-                GROUP BY p
-            """)
+  @Query("""
+    SELECT p, COUNT(pc)
+    FROM Post p
+    LEFT JOIN p.comments pc
+    WHERE p.status != 2 AND (pc.status = 0 OR pc IS NULL)
+    GROUP BY p
+""")
   List<Object[]> findPostsWithCommentCount();
 
-  @Query(
-      """
-                SELECT p, COUNT(pc)
-                FROM Post p
-                LEFT JOIN p.comments pc
-                WHERE p.id = :postId AND p.status != 2
-                GROUP BY p
-            """)
+  @Query("""
+    SELECT p, COUNT(pc)
+    FROM Post p
+    LEFT JOIN p.comments pc
+    WHERE p.id = :postId AND p.status != 2 AND (pc.status = 0 OR pc IS NULL)
+    GROUP BY p
+""")
   Object[] findPostWithCommentCountById(@Param("postId") String postId);
 
   @Query(
-      value =
-          """
-                SELECT p, COUNT(c) as commentCount
-                FROM Post p
-                JOIN p.media m
-                LEFT JOIN p.comments c
-                WHERE m.mediaType = 'VIDEO' AND p.status != 2
-                GROUP BY p
-            """,
-      countQuery =
-          """
-                SELECT COUNT(p)
-                FROM Post p
-                JOIN p.media m
-                WHERE m.mediaType = 'VIDEO' AND p.status != 2
-            """)
+          value =
+                  """
+                  SELECT p, COUNT(c) as commentCount
+                  FROM Post p
+                  JOIN p.media m
+                  LEFT JOIN p.comments c ON c.status = 0
+                  WHERE m.mediaType = 'VIDEO' AND p.status != 2
+                  GROUP BY p
+                  """,
+          countQuery =
+                  """
+                  SELECT COUNT(p)
+                  FROM Post p
+                  JOIN p.media m
+                  WHERE m.mediaType = 'VIDEO' AND p.status != 2
+                  """
+  )
   Page<Object[]> findReelsPostsWithCommentCount(Pageable pageable);
+
 
   @Query(
       value =
