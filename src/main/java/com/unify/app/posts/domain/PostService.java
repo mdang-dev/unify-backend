@@ -9,7 +9,10 @@ import com.unify.app.posts.domain.models.PersonalizedPostDto;
 import com.unify.app.posts.domain.models.PostDto;
 import com.unify.app.posts.domain.models.PostFeedResponse;
 import com.unify.app.posts.domain.models.PostFilterDto;
+import com.unify.app.posts.domain.models.PostRowDto;
+import com.unify.app.posts.domain.models.PostTableResponse;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -359,5 +362,119 @@ public class PostService {
         filterDto.commentCountOperator(),
         page,
         size);
+  }
+
+  public PostTableResponse getPostsForTable(
+      String captions,
+      Integer status,
+      Audience audience,
+      Boolean isCommentVisible,
+      Boolean isLikeVisible,
+      String hashtag,
+      Long commentCount,
+      String commentCountOperator,
+      int page,
+      int size) {
+
+    Pageable pageable = PageRequest.of(page, size);
+
+    // Convert Audience enum to string for native query
+    String audienceString = audience != null ? audience.name() : null;
+
+    Page<Object[]> result =
+        postRepository.findPostsForTable(
+            captions,
+            status,
+            audienceString,
+            isCommentVisible,
+            isLikeVisible,
+            hashtag,
+            commentCount,
+            commentCountOperator,
+            pageable);
+
+    List<PostRowDto> rows = new ArrayList<>();
+    int currentIndex = page * size + 1; // Start index for current page
+
+    for (Object[] row : result.getContent()) {
+      // Map database columns to PostRowDto
+      String postId = (String) row[0];
+      String postCaptions = (String) row[1];
+      Integer postStatus = (Integer) row[2];
+      String postAudience = (String) row[3];
+      LocalDateTime postPostedAt = convertToLocalDateTime(row[4]);
+      // row[5] - is_comment_visible (not needed for display)
+      // row[6] - is_like_visible (not needed for display)
+      // row[7] - updated_at (not needed for display)
+      // row[8] - user_id (not needed for display)
+      String firstName = (String) row[9];
+      String lastName = (String) row[10];
+      String username = (String) row[11];
+      Long postCommentCount = ((Number) row[12]).longValue();
+
+      // Construct user display - prefer full name, fallback to @username
+      String userDisplay;
+      if (firstName != null
+          && lastName != null
+          && !firstName.trim().isEmpty()
+          && !lastName.trim().isEmpty()) {
+        userDisplay = firstName.trim() + " " + lastName.trim();
+      } else if (firstName != null && !firstName.trim().isEmpty()) {
+        userDisplay = firstName.trim();
+      } else if (lastName != null && !lastName.trim().isEmpty()) {
+        userDisplay = lastName.trim();
+      } else {
+        userDisplay = "@" + (username != null ? username : "unknown");
+      }
+
+      PostRowDto postRow =
+          new PostRowDto(
+              currentIndex++,
+              userDisplay,
+              postCaptions,
+              postStatus,
+              postAudience,
+              postPostedAt,
+              postCommentCount,
+              new PostRowDto.PostActionDto(postId));
+
+      rows.add(postRow);
+    }
+
+    return new PostTableResponse(
+        rows,
+        page + 1, // Convert 0-based to 1-based page number
+        size,
+        result.getTotalElements());
+  }
+
+  /**
+   * Helper method to convert various date/time types to LocalDateTime Handles conversion from
+   * Timestamp (native SQL) to LocalDateTime
+   */
+  private LocalDateTime convertToLocalDateTime(Object dateTimeObject) {
+    if (dateTimeObject == null) {
+      return null;
+    }
+
+    if (dateTimeObject instanceof LocalDateTime) {
+      return (LocalDateTime) dateTimeObject;
+    }
+
+    if (dateTimeObject instanceof java.sql.Timestamp) {
+      return ((java.sql.Timestamp) dateTimeObject).toLocalDateTime();
+    }
+
+    if (dateTimeObject instanceof java.util.Date) {
+      return LocalDateTime.ofInstant(
+          ((java.util.Date) dateTimeObject).toInstant(), ZoneId.systemDefault());
+    }
+
+    // If we get here, we have an unexpected type
+    throw new IllegalArgumentException(
+        "Cannot convert "
+            + dateTimeObject.getClass().getName()
+            + " to LocalDateTime: "
+            + dateTimeObject);
   }
 }

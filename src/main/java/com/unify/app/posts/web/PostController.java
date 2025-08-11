@@ -4,6 +4,7 @@ import com.unify.app.posts.domain.PostService;
 import com.unify.app.posts.domain.models.Audience;
 import com.unify.app.posts.domain.models.PostDto;
 import com.unify.app.posts.domain.models.PostFeedResponse;
+import com.unify.app.posts.domain.models.PostTableResponse;
 import com.unify.app.security.SecurityService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -127,31 +128,60 @@ class PostController {
     return ResponseEntity.ok(posts);
   }
 
+  // @GetMapping("/filter")
+  // public ResponseEntity<Page<PostDto>> getPostsWithFilters(
+  //     @RequestParam(required = false) String captions,
+  //     @RequestParam(required = false) Integer status,
+  //     @RequestParam(required = false) Audience audience,
+  //     @RequestParam(required = false) Boolean isCommentVisible,
+  //     @RequestParam(required = false) Boolean isLikeVisible,
+  //     @RequestParam(required = false) Long commentCount,
+  //     @RequestParam(required = false, defaultValue = "=") String commentCountOperator,
+  //     @RequestParam(defaultValue = "0") int page,
+  //     @RequestParam(defaultValue = "10") int size) {
+
+  //   Page<PostDto> postPage =
+  //       postService.getPostsWithFilters(
+  //           captions,
+  //           status,
+  //           audience,
+  //           isCommentVisible,
+  //           isLikeVisible,
+  //           null, // hashtags - not implemented in this version
+  //           commentCount,
+  //           commentCountOperator,
+  //           page,
+  //           size);
+
+  //   return ResponseEntity.ok(postPage);
+  // }
+
   @GetMapping("/filter")
-  public ResponseEntity<Page<PostDto>> getPostsWithFilters(
+  public ResponseEntity<PostTableResponse> getPostsForTable(
       @RequestParam(required = false) String captions,
       @RequestParam(required = false) Integer status,
       @RequestParam(required = false) Audience audience,
       @RequestParam(required = false) Boolean isCommentVisible,
       @RequestParam(required = false) Boolean isLikeVisible,
+      @RequestParam(required = false) String hashtag,
       @RequestParam(required = false) Long commentCount,
       @RequestParam(required = false, defaultValue = "=") String commentCountOperator,
       @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "10") int size) {
+      @RequestParam(defaultValue = "20") int pageSize) {
 
-    Page<PostDto> postPage =
-        postService.getPostsWithFilters(
+    PostTableResponse response =
+        postService.getPostsForTable(
             captions,
             status,
             audience,
             isCommentVisible,
             isLikeVisible,
-            null, // hashtags - not implemented in this version
+            hashtag,
             commentCount,
             commentCountOperator,
             page,
-            size);
+            pageSize);
 
-    return ResponseEntity.ok(postPage);
+    return ResponseEntity.ok(response);
   }
 }

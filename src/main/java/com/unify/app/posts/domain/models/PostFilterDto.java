@@ -10,6 +10,7 @@ public record PostFilterDto(
     Boolean isCommentVisible,
     Boolean isLikeVisible,
     Set<HashtagDetailDto> hashtags,
+    String hashtag, // case-insensitive substring match on hashtag name
     Long commentCount,
     String commentCountOperator // ">", "<", "=", ">=", "<="
     ) {}
