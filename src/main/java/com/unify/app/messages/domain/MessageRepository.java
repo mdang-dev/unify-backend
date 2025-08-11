@@ -17,7 +17,8 @@ interface MessageRepository extends MongoRepository<Message, String> {
   // Optimized method using predefined sort for ascending timeline
   @Query(
       value =
-          "{ $or: [ { $and: [ { sender: ?0 }, { receiver: ?1 } ] }, { $and: [ { sender: ?1 }, { receiver: ?0 } ] } ] }")
+          "{ $or: [ { $and: [ { sender: ?0 }, { receiver: ?1 } ] }, { $and: [ { sender: ?1 }, { receiver: ?0 } ] } ] }",
+      fields = "{ id: 1, sender: 1, receiver: 1, content: 1, timestamp: 1, fileUrls: 1 }")
   List<Message> findConversationAsc(String userId, String partnerId, Sort sort);
 
   @Aggregation(

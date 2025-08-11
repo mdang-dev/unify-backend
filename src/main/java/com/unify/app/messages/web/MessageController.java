@@ -43,9 +43,11 @@ public class MessageController {
       // ✅ PERFORMANCE: Ultra-fast message processing
       MessageDto updateMessage = MessageDto.withCurrentTimestamp(message);
 
-      // ✅ PERFORMANCE: Send message to receiver immediately (async save)
+      // ✅ Send message to both users with server timestamp to avoid clock skew issues
       messagingTemplate.convertAndSendToUser(
           updateMessage.receiver(), "/queue/messages", updateMessage);
+      messagingTemplate.convertAndSendToUser(
+          updateMessage.sender(), "/queue/messages", updateMessage);
 
       // ✅ PERFORMANCE: Async save and broadcast (non-blocking)
       CompletableFuture.runAsync(
@@ -124,15 +126,20 @@ public class MessageController {
   @PostMapping("/send")
   public ResponseEntity<?> sendMessageHttp(@RequestBody MessageDto message) {
     try {
-      // Save message to database
-      MessageDto savedMessage = messageService.saveMessage(message);
+      // Ensure server-side timestamp for consistency across clients
+      MessageDto updateMessage = MessageDto.withCurrentTimestamp(message);
 
-      // ✅ FIX: Send message to receiver only via WebSocket
+      // Save message to database
+      MessageDto savedMessage = messageService.saveMessage(updateMessage);
+
+      // ✅ Send to both users with server timestamp
       messagingTemplate.convertAndSendToUser(
           savedMessage.receiver(), "/queue/messages", savedMessage);
+      messagingTemplate.convertAndSendToUser(
+          savedMessage.sender(), "/queue/messages", savedMessage);
 
       // Broadcast chat list updates to both users
-      broadcastChatListUpdate(message.sender(), message.receiver());
+      broadcastChatListUpdate(savedMessage.sender(), savedMessage.receiver());
 
       return ResponseEntity.ok(savedMessage);
 
