@@ -29,4 +29,5 @@ class Notification implements Serializable {
   @Builder.Default boolean isRead = false;
   String message;
   String link;
+  String data; // ✅ ADDED: Store JSON data like commentId, postId
 }

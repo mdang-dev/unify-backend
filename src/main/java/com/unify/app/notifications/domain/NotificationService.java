@@ -47,6 +47,17 @@ public class NotificationService {
 
   public void createAndSendNotification(
       String senderId, String receiverId, NotificationType type, String message, String link) {
+    createAndSendNotification(senderId, receiverId, type, message, link, null);
+  }
+
+  // ✅ NEW: Overload with data parameter
+  public void createAndSendNotification(
+      String senderId,
+      String receiverId,
+      NotificationType type,
+      String message,
+      String link,
+      String data) {
     try {
       // Validate inputs
       if (senderId == null || receiverId == null || type == null) {
@@ -74,6 +85,7 @@ public class NotificationService {
               .type(type)
               .message(message)
               .link(link)
+              .data(data) // ✅ ADDED: Include data field
               .timestamp(LocalDateTime.now())
               .isRead(false)
               .build();
