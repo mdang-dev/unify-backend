@@ -156,7 +156,8 @@ interface PostRepository extends JpaRepository<Post, String> {
   Page<PersonalizedPostDto> findPersonalizedPostsSimple(
       @Param("userId") String userId, Pageable pageable);
 
-  @Query("""
+  @Query(
+      """
     SELECT p, COUNT(pc)
     FROM Post p
     LEFT JOIN p.comments pc
@@ -165,7 +166,8 @@ interface PostRepository extends JpaRepository<Post, String> {
 """)
   List<Object[]> findPostsWithCommentCount();
 
-  @Query("""
+  @Query(
+      """
     SELECT p, COUNT(pc)
     FROM Post p
     LEFT JOIN p.comments pc
@@ -175,8 +177,8 @@ interface PostRepository extends JpaRepository<Post, String> {
   Object[] findPostWithCommentCountById(@Param("postId") String postId);
 
   @Query(
-          value =
-                  """
+      value =
+          """
                   SELECT p, COUNT(c) as commentCount
                   FROM Post p
                   JOIN p.media m
@@ -184,16 +186,14 @@ interface PostRepository extends JpaRepository<Post, String> {
                   WHERE m.mediaType = 'VIDEO' AND p.status != 2
                   GROUP BY p
                   """,
-          countQuery =
-                  """
+      countQuery =
+          """
                   SELECT COUNT(p)
                   FROM Post p
                   JOIN p.media m
                   WHERE m.mediaType = 'VIDEO' AND p.status != 2
-                  """
-  )
+                  """)
   Page<Object[]> findReelsPostsWithCommentCount(Pageable pageable);
-
 
   @Query(
       value =

@@ -252,4 +252,61 @@ public class MessageService {
       log.warn("Failed to update chat list cache: {}", e.getMessage());
     }
   }
+
+  // ✅ BACKEND SYNC: Find message by ID or clientTempId
+  public MessageDto findMessageByIdOrTempId(String messageId, String clientTempId) {
+    try {
+      Message message = null;
+
+      // Try to find by messageId first
+      if (messageId != null && !messageId.trim().isEmpty()) {
+        message = messageRepository.findById(messageId).orElse(null);
+      }
+
+      // If not found by messageId, try clientTempId
+      if (message == null && clientTempId != null && !clientTempId.trim().isEmpty()) {
+        message = messageRepository.findByClientTempId(clientTempId).orElse(null);
+      }
+
+      return message != null ? mapper.toDto(message) : null;
+
+    } catch (Exception e) {
+      log.error("Error finding message by ID or tempId: {}", e.getMessage());
+      return null;
+    }
+  }
+
+  // ✅ BACKEND SYNC: Find multiple messages by IDs or clientTempIds
+  public List<MessageDto> findMessagesByIdsOrTempIds(List<String> identifiers) {
+    try {
+      if (identifiers == null || identifiers.isEmpty()) {
+        return List.of();
+      }
+
+      // Try to find by IDs first
+      List<Message> messagesByIds = messageRepository.findAllById(identifiers);
+
+      // Find remaining identifiers that weren't found as IDs
+      List<String> foundIds = messagesByIds.stream().map(Message::getId).toList();
+
+      List<String> remainingIdentifiers =
+          identifiers.stream().filter(id -> !foundIds.contains(id)).toList();
+
+      // Try to find remaining by clientTempId
+      List<Message> messagesByTempIds = List.of();
+      if (!remainingIdentifiers.isEmpty()) {
+        messagesByTempIds = messageRepository.findByClientTempIdIn(remainingIdentifiers);
+      }
+
+      // Combine results
+      List<Message> allMessages = new java.util.ArrayList<>(messagesByIds);
+      allMessages.addAll(messagesByTempIds);
+
+      return allMessages.stream().map(mapper::toDto).collect(Collectors.toList());
+
+    } catch (Exception e) {
+      log.error("Error finding messages by IDs or tempIds: {}", e.getMessage());
+      return List.of();
+    }
+  }
 }
