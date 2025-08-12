@@ -44,4 +44,5 @@ class Message implements Serializable {
   LocalDateTime timestamp;
   List<String> fileUrls;
   MessageType type;
+  @Indexed String clientTempId; // ✅ BACKEND SYNC: Track frontend temp IDs
 }

@@ -169,4 +169,88 @@ public class MessageController {
       return ResponseEntity.ok(List.of());
     }
   }
+
+  // ✅ BACKEND SYNC: Check message status endpoint
+  @GetMapping("/status")
+  public ResponseEntity<?> checkMessageStatus(
+      @RequestParam(required = false) String messageId,
+      @RequestParam(required = false) String clientTempId) {
+
+    try {
+      if (messageId == null && clientTempId == null) {
+        return ResponseEntity.badRequest()
+            .body(Map.of("error", "Either messageId or clientTempId is required"));
+      }
+
+      MessageDto message = messageService.findMessageByIdOrTempId(messageId, clientTempId);
+
+      if (message == null) {
+        return ResponseEntity.ok(Map.of("status", "unknown", "exists", false));
+      }
+
+      // Map backend message state to frontend-compatible status
+      String status = mapToMessageStatus(message);
+
+      return ResponseEntity.ok(
+          Map.of(
+              "messageId",
+              message.id(),
+              "status",
+              status,
+              "timestamp",
+              message.timestamp(),
+              "exists",
+              true,
+              "serverConfirmed",
+              true));
+
+    } catch (Exception e) {
+      log.error("Error checking message status: {}", e.getMessage());
+      return ResponseEntity.status(500).body(Map.of("error", "Failed to check message status"));
+    }
+  }
+
+  // ✅ BACKEND SYNC: Batch check message statuses
+  @PostMapping("/batch-status")
+  public ResponseEntity<?> batchCheckMessageStatus(@RequestBody Map<String, List<String>> request) {
+
+    try {
+      List<String> messageIds = request.get("messageIds");
+      if (messageIds == null || messageIds.isEmpty()) {
+        return ResponseEntity.ok(List.of());
+      }
+
+      List<MessageDto> messages = messageService.findMessagesByIdsOrTempIds(messageIds);
+
+      List<Map<String, Object>> statuses =
+          messages.stream()
+              .map(
+                  message ->
+                      Map.of(
+                          "messageId", (Object) message.id(),
+                          "clientTempId",
+                              (Object)
+                                  (message.clientTempId() != null ? message.clientTempId() : ""),
+                          "status", (Object) mapToMessageStatus(message),
+                          "timestamp", (Object) message.timestamp(),
+                          "serverConfirmed", (Object) true))
+              .toList();
+
+      return ResponseEntity.ok(statuses);
+
+    } catch (Exception e) {
+      log.error("Error batch checking message statuses: {}", e.getMessage());
+      return ResponseEntity.ok(List.of());
+    }
+  }
+
+  // ✅ Map message to status for frontend
+  private String mapToMessageStatus(MessageDto message) {
+    // For now, all saved messages are considered "delivered"
+    // You can extend this logic based on your message state requirements
+    if (message.timestamp() != null) {
+      return "delivered"; // Message exists in database = delivered
+    }
+    return "pending"; // Fallback
+  }
 }

@@ -2,6 +2,7 @@ package com.unify.app.messages.domain;
 
 import com.unify.app.messages.domain.models.ChatPreviewProjection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -35,4 +36,10 @@ interface MessageRepository extends MongoRepository<Message, String> {
         "{ $match: { _id: { $exists: true } } }" // Ensure _id exists
       })
   List<ChatPreviewProjection> findChatList(String userId);
+
+  // ✅ BACKEND SYNC: Find message by clientTempId
+  Optional<Message> findByClientTempId(String clientTempId);
+
+  // ✅ BACKEND SYNC: Find messages by multiple clientTempIds
+  List<Message> findByClientTempIdIn(List<String> clientTempIds);
 }
