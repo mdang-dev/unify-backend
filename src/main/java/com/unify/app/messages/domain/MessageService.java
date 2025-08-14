@@ -6,6 +6,7 @@ import com.unify.app.messages.domain.models.MessageDto;
 import com.unify.app.users.domain.UserService;
 import com.unify.app.users.domain.models.UserDto;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -253,59 +254,113 @@ public class MessageService {
     }
   }
 
+  // ✅ IMPROVED: Check for duplicate messages to prevent processing duplicates
+  public boolean isDuplicateMessage(MessageDto message) {
+    try {
+      if (message == null
+          || message.content() == null
+          || message.sender() == null
+          || message.receiver() == null) {
+        return false;
+      }
+
+      // Check for recent duplicate messages (within last 10 seconds)
+      LocalDateTime tenSecondsAgo = LocalDateTime.now().minusSeconds(10);
+
+      // Look for messages with same content, sender, and receiver in recent time
+      List<Message> recentMessages =
+          messageRepository.findRecentMessagesByContentAndUsers(
+              message.content(), message.sender(), message.receiver(), tenSecondsAgo);
+
+      // If we find any recent messages with same content, it's a duplicate
+      return !recentMessages.isEmpty();
+
+    } catch (Exception e) {
+      log.warn("Error checking for duplicate message: {}", e.getMessage());
+      return false; // Allow message if we can't check for duplicates
+    }
+  }
+
   // ✅ BACKEND SYNC: Find message by ID or clientTempId
   public MessageDto findMessageByIdOrTempId(String messageId, String clientTempId) {
     try {
-      Message message = null;
+      // ✅ IMPROVED: Better message finding logic
+      Message foundMessage = null;
 
-      // Try to find by messageId first
+      // First try to find by message ID
       if (messageId != null && !messageId.trim().isEmpty()) {
-        message = messageRepository.findById(messageId).orElse(null);
+        foundMessage = messageRepository.findById(messageId).orElse(null);
       }
 
-      // If not found by messageId, try clientTempId
-      if (message == null && clientTempId != null && !clientTempId.trim().isEmpty()) {
-        message = messageRepository.findByClientTempId(clientTempId).orElse(null);
+      // If not found by ID, try to find by clientTempId
+      if (foundMessage == null && clientTempId != null && !clientTempId.trim().isEmpty()) {
+        foundMessage = messageRepository.findByClientTempId(clientTempId).orElse(null);
       }
 
-      return message != null ? mapper.toDto(message) : null;
+      // ✅ IMPROVED: Also try to find by content and recent timestamp if still not found
+      if (foundMessage == null && clientTempId != null) {
+        // Look for messages with the same clientTempId in the last 10 minutes
+        LocalDateTime tenMinutesAgo = LocalDateTime.now().minusMinutes(10);
+        List<Message> recentMessages =
+            messageRepository.findByClientTempIdAndTimestampAfter(clientTempId, tenMinutesAgo);
+
+        if (!recentMessages.isEmpty()) {
+          // Take the most recent one
+          foundMessage =
+              recentMessages.stream().max(Comparator.comparing(Message::getTimestamp)).orElse(null);
+        }
+      }
+
+      if (foundMessage != null) {
+        return mapper.toDto(foundMessage);
+      }
+
+      return null;
 
     } catch (Exception e) {
-      log.error("Error finding message by ID or tempId: {}", e.getMessage());
+      log.warn("Error finding message by ID or clientTempId: {}", e.getMessage());
       return null;
     }
   }
 
-  // ✅ BACKEND SYNC: Find multiple messages by IDs or clientTempIds
+  // ✅ IMPROVED: Find messages by multiple IDs or clientTempIds
   public List<MessageDto> findMessagesByIdsOrTempIds(List<String> identifiers) {
     try {
       if (identifiers == null || identifiers.isEmpty()) {
         return List.of();
       }
 
-      // Try to find by IDs first
-      List<Message> messagesByIds = messageRepository.findAllById(identifiers);
+      List<Message> foundMessages = new ArrayList<>();
 
-      // Find remaining identifiers that weren't found as IDs
-      List<String> foundIds = messagesByIds.stream().map(Message::getId).toList();
+      // Separate IDs and clientTempIds
+      List<String> messageIds = new ArrayList<>();
+      List<String> clientTempIds = new ArrayList<>();
 
-      List<String> remainingIdentifiers =
-          identifiers.stream().filter(id -> !foundIds.contains(id)).toList();
-
-      // Try to find remaining by clientTempId
-      List<Message> messagesByTempIds = List.of();
-      if (!remainingIdentifiers.isEmpty()) {
-        messagesByTempIds = messageRepository.findByClientTempIdIn(remainingIdentifiers);
+      for (String identifier : identifiers) {
+        if (identifier.startsWith("optimistic_")) {
+          clientTempIds.add(identifier);
+        } else {
+          messageIds.add(identifier);
+        }
       }
 
-      // Combine results
-      List<Message> allMessages = new java.util.ArrayList<>(messagesByIds);
-      allMessages.addAll(messagesByTempIds);
+      // Find by message IDs
+      if (!messageIds.isEmpty()) {
+        List<Message> byIds = messageRepository.findAllById(messageIds);
+        foundMessages.addAll(byIds);
+      }
 
-      return allMessages.stream().map(mapper::toDto).collect(Collectors.toList());
+      // Find by clientTempIds
+      if (!clientTempIds.isEmpty()) {
+        List<Message> byTempIds = messageRepository.findByClientTempIdIn(clientTempIds);
+        foundMessages.addAll(byTempIds);
+      }
+
+      // Remove duplicates and return DTOs
+      return foundMessages.stream().distinct().map(mapper::toDto).collect(Collectors.toList());
 
     } catch (Exception e) {
-      log.error("Error finding messages by IDs or tempIds: {}", e.getMessage());
+      log.warn("Error finding messages by IDs or clientTempIds: {}", e.getMessage());
       return List.of();
     }
   }
