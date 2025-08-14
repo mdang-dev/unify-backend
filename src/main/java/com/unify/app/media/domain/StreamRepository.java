@@ -16,16 +16,16 @@ interface StreamRepository extends JpaRepository<Stream, String> {
 
   Optional<Stream> findByUserId(String userId);
 
-  @Query(
+    @Query(
       value =
           """
-                SELECT u.*
-                FROM users u
-                JOIN streams s ON u.id = s.user_id
-                JOIN follows f ON f.following_id = u.id
-                WHERE s.is_live = TRUE
-                  AND f.follower_id = :userId
-            """,
+      SELECT u.*
+      FROM users u
+      JOIN streams s ON u.id = s.user_id
+      JOIN followers f ON f.following_id = u.id
+      WHERE s.is_live = TRUE
+        AND f.follower_id = :userId
+      """,
       nativeQuery = true)
   List<User> findLiveUsersFollowedBy(@Param("userId") String userId);
 }
