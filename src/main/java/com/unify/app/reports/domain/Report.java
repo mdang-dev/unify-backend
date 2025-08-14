@@ -2,6 +2,7 @@ package com.unify.app.reports.domain;
 
 import com.unify.app.reports.domain.models.EntityType;
 import com.unify.app.users.domain.User;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,9 +13,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -56,4 +60,7 @@ class Report implements Serializable {
 
   @Column(name = "admin_reason")
   String adminReason;
+
+  @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<ReportImage> images = new ArrayList<>();
 }

@@ -35,8 +35,12 @@ interface ReportRepository extends JpaRepository<Report, String> {
 
   List<Report> findByUserIdAndEntityType(String userId, EntityType entityType);
 
+  List<Report> findByReportedIdAndEntityType(String reportedId, EntityType entityType);
+
   List<Report> findByReportedIdAndEntityTypeAndStatusIn(
       String reportedId, EntityType entityType, List<Integer> statuses);
+
+  List<Report> findByUserIdOrderByReportedAtDesc(String userId);
 
   List<Report> findByUserId(String userId);
 
@@ -48,6 +52,7 @@ interface ReportRepository extends JpaRepository<Report, String> {
   List<Report> findReportsOfPostsOwnedByUser(
       @Param("entityType") EntityType entityType, @Param("userId") String userId);
 
+  // Updated upstream
   // Get distinct reported posts with aggregated data - wrapper method
   default Page<ReportSummaryDto> findDistinctReportedPosts(
       Integer status, LocalDateTime from, LocalDateTime to, Pageable pageable) {
@@ -569,4 +574,18 @@ interface ReportRepository extends JpaRepository<Report, String> {
       return findDistinctReportedUsersWithNoFilters(pageable);
     }
   }
+
+  // Repository method to fetch grouped data
+  @Query(
+      """
+			 SELECT r.reportedId AS reportedId,
+			        r.entityType AS entityType,
+			        COUNT(r.id) AS reportCount,
+			        MAX(r.status) AS maxStatus
+			 FROM Report r
+			 WHERE r.status IN :statuses AND r.entityType = :entityType
+			 GROUP BY r.reportedId, r.entityType
+			""")
+  List<AggregatedReportProjection> findGroupedReports(
+      List<Integer> statuses, EntityType entityType);
 }

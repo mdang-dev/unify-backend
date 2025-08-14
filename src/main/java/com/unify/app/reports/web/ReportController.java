@@ -91,22 +91,29 @@ public class ReportController {
 
   @PostMapping("/post")
   public ResponseEntity<ReportDto> createPostReport(
-      @RequestParam String reportedId, @RequestParam String reason) {
-    ReportDto reportDTO = reportService.createPostReport(reportedId, reason);
+      @RequestParam String reportedId,
+      @RequestParam String reason,
+      @RequestParam(required = false) List<String> urls) {
+    ReportDto reportDTO = reportService.createPostReport(reportedId, reason, urls);
     return ResponseEntity.status(HttpStatus.CREATED).body(reportDTO);
   }
 
   @PostMapping("/user")
   public ResponseEntity<ReportDto> createUserReport(
-      @RequestParam String reportedId, @RequestParam String reason) {
-    ReportDto reportDTO = reportService.createUserReport(reportedId, reason);
+      @RequestParam String reportedId,
+      @RequestParam String reason,
+      @RequestParam(required = false) List<String> urls) {
+    System.out.println("URLS: " + urls);
+    ReportDto reportDTO = reportService.createUserReport(reportedId, reason, urls);
     return ResponseEntity.status(HttpStatus.CREATED).body(reportDTO);
   }
 
   @PostMapping("/comment")
   public ResponseEntity<ReportDto> createCommentReport(
-      @RequestParam String reportedId, @RequestParam String reason) {
-    ReportDto reportDTO = reportService.createCommentReport(reportedId, reason);
+      @RequestParam String reportedId,
+      @RequestParam String reason,
+      @RequestParam(required = false) List<String> urls) {
+    ReportDto reportDTO = reportService.createCommentReport(reportedId, reason, urls);
     return ResponseEntity.status(HttpStatus.CREATED).body(reportDTO);
   }
 
