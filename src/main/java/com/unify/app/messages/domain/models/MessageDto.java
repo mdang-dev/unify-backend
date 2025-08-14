@@ -21,12 +21,17 @@ public record MessageDto(
         (message.id() == null || message.id().isBlank())
             ? new ObjectId().toHexString()
             : message.id();
+
+    // ✅ VIETNAM TIMEZONE: Use frontend timestamp if provided, otherwise server time
+    LocalDateTime finalTimestamp =
+        message.timestamp() != null ? message.timestamp() : DateTimeUtils.nowVietnam();
+
     return new MessageDto(
         ensuredId,
         message.sender(),
         message.receiver(),
         message.content(),
-        DateTimeUtils.nowVietnam(),
+        finalTimestamp, // ✅ Use frontend or server Vietnam time
         message.fileUrls(),
         message.type(),
         message.clientTempId());
