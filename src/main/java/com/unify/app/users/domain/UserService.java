@@ -159,31 +159,58 @@ public class UserService {
             .findById(userDto.id())
             .orElseThrow(() -> new UserNotFoundException("User not found!"));
 
-    User updatedUser = userMapper.toUser(userDto);
-    updatedUser.setReportApprovalCount(existingUser.getReportApprovalCount());
-    updatedUser.setPassword(existingUser.getPassword());
-    updatedUser.setRoles(existingUser.getRoles()); // Preserve roles
-
-    // Handle avatar update
-    if (userDto.avatar() != null && userDto.avatar().url() != null) {
-      // Create new avatar and save it to database
-      Avatar newAvatar = avatarMapper.toAvatar(userDto.avatar());
-      newAvatar.setUser(updatedUser);
-      newAvatar = avatarRepository.save(newAvatar);
-
-      // Add new avatar to existing avatars (keep all avatars, newest will be first)
-      Set<Avatar> allAvatars = new HashSet<>();
-      if (existingUser.getAvatars() != null) {
-        allAvatars.addAll(existingUser.getAvatars());
-      }
-      allAvatars.add(newAvatar);
-      updatedUser.setAvatars(allAvatars);
-    } else {
-      // Keep existing avatars if no new avatar provided
-      updatedUser.setAvatars(existingUser.getAvatars());
+    // Update only the fields that are provided in the DTO
+    if (userDto.firstName() != null) {
+      existingUser.setFirstName(userDto.firstName());
+    }
+    if (userDto.lastName() != null) {
+      existingUser.setLastName(userDto.lastName());
+    }
+    if (userDto.username() != null) {
+      existingUser.setUsername(userDto.username());
+    }
+    if (userDto.phone() != null) {
+      existingUser.setPhone(userDto.phone());
+    }
+    if (userDto.gender() != null) {
+      existingUser.setGender(userDto.gender());
+    }
+    if (userDto.birthDay() != null) {
+      existingUser.setBirthDay(userDto.birthDay());
+    }
+    if (userDto.location() != null) {
+      existingUser.setLocation(userDto.location());
+    }
+    if (userDto.education() != null) {
+      existingUser.setEducation(userDto.education());
+    }
+    if (userDto.workAt() != null) {
+      existingUser.setWorkAt(userDto.workAt());
+    }
+    if (userDto.biography() != null) {
+      existingUser.setBiography(userDto.biography());
+    }
+    if (userDto.status() != null) {
+      existingUser.setStatus(userDto.status());
     }
 
-    updatedUser = userRepository.save(updatedUser);
+    // Handle avatar update if provided
+    if (userDto.avatar() != null && userDto.avatar().url() != null) {
+      Avatar newAvatar = new Avatar();
+      newAvatar.setUrl(userDto.avatar().url());
+      newAvatar.setUser(existingUser);
+
+      // Save the new avatar
+      newAvatar = avatarRepository.save(newAvatar);
+
+      // Add to existing user's avatars
+      if (existingUser.getAvatars() == null) {
+        existingUser.setAvatars(new HashSet<>());
+      }
+      existingUser.getAvatars().add(newAvatar);
+    }
+
+    User updatedUser = userRepository.save(existingUser);
 
     return userMapper.toUserDTO(updatedUser);
   }

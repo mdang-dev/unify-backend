@@ -1,11 +1,9 @@
 package com.unify.app.users.domain.models;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.unify.app.users.domain.Role;
 import java.time.LocalDate;
 import java.util.List;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public record UserDto(
     String id,
     String firstName,
