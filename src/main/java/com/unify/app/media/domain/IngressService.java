@@ -55,7 +55,7 @@ public class IngressService {
                   null, // audioOptions (default)
                   isWhipInput ? videoOptions : null, // videoOptions
                   isWhipInput, // bypassTranscoding
-                  isWhipInput // enableTranscoding
+                  true // enableTranscoding
                   )
               .execute();
 
