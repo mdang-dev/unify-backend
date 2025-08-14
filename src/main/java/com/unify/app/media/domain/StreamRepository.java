@@ -16,7 +16,7 @@ interface StreamRepository extends JpaRepository<Stream, String> {
 
   Optional<Stream> findByUserId(String userId);
 
-    @Query(
+  @Query(
       value =
           """
       SELECT u.*

@@ -7,7 +7,6 @@ import com.unify.app.messages.domain.models.MessageDto;
 import com.unify.app.ws.WebSocketPerformanceMonitor;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -40,36 +39,51 @@ public class MessageController {
   @MessageMapping("/chat.sendMessage")
   public void sendMessage(@Payload MessageDto message) {
     try {
+      // ✅ IMPROVED: Check for duplicate messages before processing
+      if (messageService.isDuplicateMessage(message)) {
+        log.warn(
+            "Duplicate message detected, ignoring: {} -> {}, content: {}",
+            message.sender(),
+            message.receiver(),
+            message.content());
+        return;
+      }
+
       // ✅ PERFORMANCE: Ultra-fast message processing
       MessageDto updateMessage = MessageDto.withCurrentTimestamp(message);
 
-      // ✅ Send message to both users with server timestamp to avoid clock skew issues
+      // ✅ IMPROVED: Ensure message is saved to database first before broadcasting
+      MessageDto savedMessage = messageService.saveMessage(updateMessage);
+
+      // ✅ IMPROVED: Send saved message to both users with server timestamp to avoid clock skew
+      // issues
       messagingTemplate.convertAndSendToUser(
-          updateMessage.receiver(), "/queue/messages", updateMessage);
+          savedMessage.receiver(), "/queue/messages", savedMessage);
       messagingTemplate.convertAndSendToUser(
-          updateMessage.sender(), "/queue/messages", updateMessage);
+          savedMessage.sender(), "/queue/messages", savedMessage);
 
-      // ✅ PERFORMANCE: Async save and broadcast (non-blocking)
-      CompletableFuture.runAsync(
-          () -> {
-            try {
-              // Save message to database
-              messageService.saveMessage(updateMessage);
+      // ✅ IMPROVED: Broadcast chat list updates to both users after successful save
+      broadcastChatListUpdate(savedMessage.sender(), savedMessage.receiver());
 
-              // Broadcast chat list updates to both users
-              broadcastChatListUpdate(updateMessage.sender(), updateMessage.receiver());
-
-            } catch (Exception e) {
-              // Silent error handling
-            }
-          });
+      // ✅ LOGGING: Log successful message delivery for debugging
+      log.debug(
+          "Message sent successfully: {} -> {}, content: {}",
+          savedMessage.sender(),
+          savedMessage.receiver(),
+          savedMessage.content());
 
     } catch (Exception e) {
-      // Silent error handling
+      log.error("Failed to send message: {}", e.getMessage());
+
+      // ✅ IMPROVED: Send error notification to sender
       messagingTemplate.convertAndSendToUser(
           message.sender(),
           "/queue/errors",
-          Map.of("error", "Failed to send message", "timestamp", System.currentTimeMillis()));
+          Map.of(
+              "error", "Failed to send message",
+              "timestamp", System.currentTimeMillis(),
+              "messageId", message.clientTempId(),
+              "details", e.getMessage()));
     }
   }
 
@@ -126,27 +140,52 @@ public class MessageController {
   @PostMapping("/send")
   public ResponseEntity<?> sendMessageHttp(@RequestBody MessageDto message) {
     try {
+      // ✅ IMPROVED: Check for duplicate messages before processing
+      if (messageService.isDuplicateMessage(message)) {
+        log.warn(
+            "Duplicate message detected via HTTP, ignoring: {} -> {}, content: {}",
+            message.sender(),
+            message.receiver(),
+            message.content());
+        return ResponseEntity.ok(
+            Map.of(
+                "status", "duplicate",
+                "message", "Message already sent",
+                "timestamp", System.currentTimeMillis()));
+      }
+
       // Ensure server-side timestamp for consistency across clients
       MessageDto updateMessage = MessageDto.withCurrentTimestamp(message);
 
-      // Save message to database
+      // ✅ IMPROVED: Save message to database first
       MessageDto savedMessage = messageService.saveMessage(updateMessage);
 
-      // ✅ Send to both users with server timestamp
+      // ✅ IMPROVED: Send to both users with server timestamp after successful save
       messagingTemplate.convertAndSendToUser(
           savedMessage.receiver(), "/queue/messages", savedMessage);
       messagingTemplate.convertAndSendToUser(
           savedMessage.sender(), "/queue/messages", savedMessage);
 
-      // Broadcast chat list updates to both users
+      // ✅ IMPROVED: Broadcast chat list updates to both users
       broadcastChatListUpdate(savedMessage.sender(), savedMessage.receiver());
+
+      // ✅ LOGGING: Log successful HTTP message delivery
+      log.debug(
+          "Message sent via HTTP successfully: {} -> {}, content: {}",
+          savedMessage.sender(),
+          savedMessage.receiver(),
+          savedMessage.content());
 
       return ResponseEntity.ok(savedMessage);
 
     } catch (Exception e) {
       log.error("Error sending message via HTTP: {}", e.getMessage());
       return ResponseEntity.status(500)
-          .body(Map.of("error", "Failed to send message", "message", e.getMessage()));
+          .body(
+              Map.of(
+                  "error", "Failed to send message",
+                  "message", e.getMessage(),
+                  "timestamp", System.currentTimeMillis()));
     }
   }
 
