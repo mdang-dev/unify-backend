@@ -86,7 +86,9 @@ public class SecurityConfig {
             "http://localhost:3000",
             "http://localhost:3001",
             "https://unify.qzz.io",
-            "https://*.unify.qzz.io"));
+            "https://*.unify.qzz.io",
+            "https://unify.id.vn",
+            "https://*.unify.id.vn"));
 
     configuration.setAllowCredentials(true);
     configuration.setAllowedMethods(List.of("*"));

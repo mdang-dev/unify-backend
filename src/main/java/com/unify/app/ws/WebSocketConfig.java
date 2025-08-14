@@ -26,7 +26,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             "http://localhost:3000", // Frontend development
             "http://localhost:3001", // Frontend alternative port
             "https://unify.qzz.io", // Production domain
-            "https://*.unify.qzz.io" // Subdomains
+            "https://*.unify.qzz.io", // Subdomains
+            "https://unify.id.vn", // Production domain
+            "https://*.unify.id.vn" // Subdomains
             )
         .withSockJS()
         .setHeartbeatTime(8000) // ✅ PERFORMANCE: Faster heartbeat for real-time chat
