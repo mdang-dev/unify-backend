@@ -93,8 +93,6 @@ public class OtpService {
                   otpCache.remove(entry.getKey());
                   otpValidated.remove(entry.getKey());
                 });
-
-
       }
     } catch (Exception e) {
       log.error("Error clearing oldest OTP entries: {}", e.getMessage());

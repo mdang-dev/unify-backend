@@ -65,8 +65,6 @@ public class MessageController {
       // ✅ IMPROVED: Broadcast chat list updates to both users after successful save
       broadcastChatListUpdate(savedMessage.sender(), savedMessage.receiver());
 
-
-
     } catch (Exception e) {
       log.error("Failed to send message: {}", e.getMessage());
 
