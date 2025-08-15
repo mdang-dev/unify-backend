@@ -21,24 +21,19 @@ public class WebSocketHealthController {
     try {
       Map<String, Object> health = new HashMap<>();
       
-      // Basic health status
       health.put("status", performanceMonitor.isHealthy() ? "UP" : "DOWN");
       health.put("timestamp", System.currentTimeMillis());
       
-      // Performance metrics
       health.put("activeConnections", performanceMonitor.getActiveConnections());
       health.put("totalMessagesSent", performanceMonitor.getTotalMessagesSent());
       health.put("totalMessagesReceived", performanceMonitor.getTotalMessagesReceived());
       
-      // Connection limits
-      health.put("maxConnections", 500); // From application.yml
-      health.put("maxConnectionsPerUser", 3); // From application.yml
+      health.put("maxConnections", 1000);
+      health.put("maxConnectionsPerUser", 5);
       
-      // Memory usage (estimated)
-      long estimatedMemoryUsage = performanceMonitor.getActiveConnections() * 1024; // 1KB per connection
+      long estimatedMemoryUsage = performanceMonitor.getActiveConnections() * 1024;
       health.put("estimatedMemoryUsageKB", estimatedMemoryUsage);
       
-      // Health checks
       boolean isHealthy = performanceMonitor.isHealthy();
       health.put("healthy", isHealthy);
       

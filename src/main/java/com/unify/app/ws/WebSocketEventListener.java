@@ -55,8 +55,7 @@ public class WebSocketEventListener {
     }
   }
 
-  // ✅ OPTIMIZED: Scheduled cleanup of expired connections
-  @Scheduled(fixedRate = 60000) // Every minute
+  @Scheduled(fixedRate = 60000)
   public void cleanupExpiredConnections() {
     try {
       connectionManager.cleanupExpiredConnections();
@@ -65,8 +64,7 @@ public class WebSocketEventListener {
     }
   }
 
-  // ✅ OPTIMIZED: Scheduled health check
-  @Scheduled(fixedRate = 300000) // Every 5 minutes
+  @Scheduled(fixedRate = 300000)
   public void checkWebSocketHealth() {
     try {
       boolean isHealthy = connectionManager.isHealthy();

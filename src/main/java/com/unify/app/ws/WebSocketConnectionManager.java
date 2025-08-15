@@ -19,10 +19,9 @@ public class WebSocketConnectionManager {
   private final Map<String, UserConnectionInfo> userConnections = new ConcurrentHashMap<>();
   private final AtomicInteger totalConnections = new AtomicInteger(0);
   
-  // ✅ OPTIMIZED: Connection limits
-  private static final int MAX_TOTAL_CONNECTIONS = 500;
-  private static final int MAX_CONNECTIONS_PER_USER = 3;
-  private static final long CONNECTION_TIMEOUT_MS = 300000; // 5 minutes
+  private static final int MAX_TOTAL_CONNECTIONS = 1000;
+  private static final int MAX_CONNECTIONS_PER_USER = 5;
+  private static final long CONNECTION_TIMEOUT_MS = 600000;
 
   public static class UserConnectionInfo {
     private final String userId;
@@ -51,7 +50,6 @@ public class WebSocketConnectionManager {
       }
     }
 
-    // Getters
     public String getUserId() { return userId; }
     public long getConnectedAt() { return connectedAt; }
     public String getSessionId() { return sessionId; }
@@ -59,13 +57,11 @@ public class WebSocketConnectionManager {
   }
 
   public boolean canAcceptConnection(String userId, String sessionId) {
-    // Check total connection limit
     if (totalConnections.get() >= MAX_TOTAL_CONNECTIONS) {
       log.warn("Total connection limit reached: {}", MAX_TOTAL_CONNECTIONS);
       return false;
     }
 
-    // Check per-user connection limit
     UserConnectionInfo existingInfo = userConnections.get(userId);
     if (existingInfo != null) {
       if (existingInfo.getSubscriptionCount() >= MAX_CONNECTIONS_PER_USER) {
@@ -87,11 +83,8 @@ public class WebSocketConnectionManager {
         UserConnectionInfo info = new UserConnectionInfo(userId, sessionId);
         userConnections.put(userId, info);
         totalConnections.incrementAndGet();
-        
-
       } else {
         log.warn("Connection rejected for user: {}, session: {}", userId, sessionId);
-        // Could implement connection rejection logic here
       }
     } catch (Exception e) {
       log.error("Error handling session connected event: {}", e.getMessage());
@@ -103,11 +96,9 @@ public class WebSocketConnectionManager {
       StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
       String sessionId = accessor.getSessionId();
       
-      // Find and remove the disconnected session
       userConnections.entrySet().removeIf(entry -> {
         if (entry.getValue().getSessionId().equals(sessionId)) {
           totalConnections.decrementAndGet();
-
           return true;
         }
         return false;
@@ -148,7 +139,6 @@ public class WebSocketConnectionManager {
     }
   }
 
-  // ✅ OPTIMIZED: Cleanup expired connections
   public void cleanupExpiredConnections() {
     try {
       int beforeSize = userConnections.size();
@@ -175,7 +165,6 @@ public class WebSocketConnectionManager {
     }
   }
 
-  // Getters for monitoring
   public int getTotalConnections() {
     return totalConnections.get();
   }
