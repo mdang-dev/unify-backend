@@ -38,7 +38,7 @@ public class NotificationService {
     try {
       simpMessagingTemplate.convertAndSend(
           "/user/" + receiverId + "/queue/notifications", notificationDTO);
-      log.debug("Notification sent to user {}: {}", receiverId, notificationDTO.getId());
+
     } catch (Exception e) {
       log.error("Failed to send notification to user {}: {}", receiverId, e.getMessage(), e);
       // Don't throw exception here to avoid breaking the main flow
@@ -71,7 +71,6 @@ public class NotificationService {
 
       // Don't send notification to self
       if (senderId.equals(receiverId)) {
-        log.debug("Skipping self-notification for user: {}", senderId);
         return;
       }
 

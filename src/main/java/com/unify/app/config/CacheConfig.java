@@ -44,9 +44,13 @@ public class CacheConfig implements BeanClassLoaderAware {
                     new StringRedisSerializer()))
             .serializeValuesWith(
                 RedisSerializationContext.SerializationPair.fromSerializer(serializer))
-            .entryTtl(Duration.ofMinutes(1));
+            .entryTtl(Duration.ofMinutes(30)) // ✅ OPTIMIZED: Increased from 1 minute to 30 minutes
+            .disableCachingNullValues() // ✅ OPTIMIZED: Don't cache null values
+            .prefixCacheNameWith("unify:"); // ✅ OPTIMIZED: Add prefix for better organization
+
     return RedisCacheManager.builder(redisConnectionFactory)
         .cacheDefaults(cacheConfiguration)
+        .transactionAware() // ✅ OPTIMIZED: Enable transaction awareness
         .build();
   }
 

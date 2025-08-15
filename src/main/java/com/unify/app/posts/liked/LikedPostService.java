@@ -48,10 +48,6 @@ public class LikedPostService {
 
       // ✅ PERFORMANCE: Check if already liked to avoid duplicate
       if (likedPostRepository.existsByUserIdAndPostId(request.userId(), request.postId())) {
-        log.debug(
-            "User {} already liked post {}, skipping duplicate like",
-            request.userId(),
-            request.postId());
         return;
       }
 
@@ -74,20 +70,11 @@ public class LikedPostService {
               null, // Use default message
               "/posts/" + request.postId() // Link to the post
               );
-          log.debug(
-              "Like notification sent: user {} liked post {} (owner: {})",
-              request.userId(),
-              request.postId(),
-              postOwnerId);
+
         } catch (Exception e) {
           log.error("Failed to send like notification: {}", e.getMessage(), e);
           // Don't fail the like operation if notification fails
         }
-      } else {
-        log.debug(
-            "Skipping self-notification for like: user {} liked their own post {}",
-            request.userId(),
-            request.postId());
       }
     } catch (Exception e) {
       log.error("Failed to create liked post: {}", e.getMessage(), e);
@@ -112,7 +99,7 @@ public class LikedPostService {
 
       likedPostRepository.deleteByUserIdAndPostId(request.userId(), request.postId());
 
-      log.debug("User {} unliked post {}", request.userId(), request.postId());
+
     } catch (Exception e) {
       log.error("Failed to delete liked post: {}", e.getMessage(), e);
       throw e;

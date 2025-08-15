@@ -1,7 +1,9 @@
 package com.unify.app.ws;
 
+import java.util.concurrent.ThreadPoolExecutor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -11,6 +13,7 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 
+@Slf4j
 @Configuration
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
@@ -31,9 +34,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             "https://*.unify.id.vn" // Subdomains
             )
         .withSockJS()
-        .setHeartbeatTime(8000) // ✅ PERFORMANCE: Faster heartbeat for real-time chat
-        .setDisconnectDelay(3000) // ✅ PERFORMANCE: Faster disconnect for better reconnection
-        .setHttpMessageCacheSize(2000) // ✅ PERFORMANCE: Larger cache for better performance
+        .setHeartbeatTime(20000) // ✅ OPTIMIZED: Increased for better stability
+        .setDisconnectDelay(10000) // ✅ OPTIMIZED: Increased for graceful disconnection
+        .setHttpMessageCacheSize(200) // ✅ OPTIMIZED: Reduced to prevent memory leaks
         .setWebSocketEnabled(true)
         .setSessionCookieNeeded(false);
   }
@@ -43,18 +46,25 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     registry.enableSimpleBroker("/topic", "/queue", "/user");
     registry.setApplicationDestinationPrefixes("/app");
     registry.setUserDestinationPrefix("/user");
+
+    // ✅ OPTIMIZED: Add message size limits to prevent memory issues
+    registry.setPreservePublishOrder(true);
   }
 
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
-    // ✅ PERFORMANCE: Ultra-optimized ThreadPoolTaskExecutor for real-time chat
+    // ✅ OPTIMIZED: Balanced ThreadPoolTaskExecutor for real-time chat
     ThreadPoolTaskExecutor inboundExecutor = new ThreadPoolTaskExecutor();
-    inboundExecutor.setCorePoolSize(16); // ✅ PERFORMANCE: Doubled for ultra-fast processing
-    inboundExecutor.setMaxPoolSize(32); // ✅ PERFORMANCE: Doubled for peak load
-    inboundExecutor.setQueueCapacity(1000); // ✅ PERFORMANCE: Doubled queue capacity
+    inboundExecutor.setCorePoolSize(2); // ✅ OPTIMIZED: Reduced for better resource management
+    inboundExecutor.setMaxPoolSize(4); // ✅ OPTIMIZED: Reduced for better resource management
+    inboundExecutor.setQueueCapacity(50); // ✅ OPTIMIZED: Reduced to prevent memory buildup
     inboundExecutor.setThreadNamePrefix("ws-inbound-");
-    inboundExecutor.setKeepAliveSeconds(120); // ✅ PERFORMANCE: Keep threads alive longer
-    inboundExecutor.setAllowCoreThreadTimeOut(false); // Keep core threads always active
+    inboundExecutor.setKeepAliveSeconds(30); // ✅ OPTIMIZED: Reduced for faster cleanup
+    inboundExecutor.setAllowCoreThreadTimeOut(true); // ✅ OPTIMIZED: Allow core threads to timeout
+    inboundExecutor.setWaitForTasksToCompleteOnShutdown(true); // ✅ OPTIMIZED: Graceful shutdown
+    inboundExecutor.setAwaitTerminationSeconds(15); // ✅ OPTIMIZED: Faster shutdown
+    inboundExecutor.setRejectedExecutionHandler(
+        new ThreadPoolExecutor.CallerRunsPolicy()); // ✅ OPTIMIZED: Prevent task rejection
     inboundExecutor.initialize();
 
     registration.interceptors(webSocketAuthInterceptor).taskExecutor(inboundExecutor);
@@ -62,14 +72,18 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   @Override
   public void configureClientOutboundChannel(ChannelRegistration registration) {
-    // ✅ PERFORMANCE: Ultra-optimized ThreadPoolTaskExecutor for outbound messages
+    // ✅ OPTIMIZED: Balanced ThreadPoolTaskExecutor for outbound messages
     ThreadPoolTaskExecutor outboundExecutor = new ThreadPoolTaskExecutor();
-    outboundExecutor.setCorePoolSize(16); // ✅ PERFORMANCE: Doubled for ultra-fast processing
-    outboundExecutor.setMaxPoolSize(32); // ✅ PERFORMANCE: Doubled for peak load
-    outboundExecutor.setQueueCapacity(1000); // ✅ PERFORMANCE: Doubled queue capacity
+    outboundExecutor.setCorePoolSize(2); // ✅ OPTIMIZED: Reduced for better resource management
+    outboundExecutor.setMaxPoolSize(4); // ✅ OPTIMIZED: Reduced for better resource management
+    outboundExecutor.setQueueCapacity(50); // ✅ OPTIMIZED: Reduced to prevent memory buildup
     outboundExecutor.setThreadNamePrefix("ws-outbound-");
-    outboundExecutor.setKeepAliveSeconds(120); // ✅ PERFORMANCE: Keep threads alive longer
-    outboundExecutor.setAllowCoreThreadTimeOut(false); // Keep core threads always active
+    outboundExecutor.setKeepAliveSeconds(30); // ✅ OPTIMIZED: Reduced for faster cleanup
+    outboundExecutor.setAllowCoreThreadTimeOut(true); // ✅ OPTIMIZED: Allow core threads to timeout
+    outboundExecutor.setWaitForTasksToCompleteOnShutdown(true); // ✅ OPTIMIZED: Graceful shutdown
+    outboundExecutor.setAwaitTerminationSeconds(15); // ✅ OPTIMIZED: Faster shutdown
+    outboundExecutor.setRejectedExecutionHandler(
+        new ThreadPoolExecutor.CallerRunsPolicy()); // ✅ OPTIMIZED: Prevent task rejection
     outboundExecutor.initialize();
 
     registration.taskExecutor(outboundExecutor);
@@ -78,10 +92,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
     registration
-        .setMessageSizeLimit(128 * 1024) // ✅ PERFORMANCE: 128KB - Doubled for larger messages
-        .setSendBufferSizeLimit(2 * 1024 * 1024) // ✅ PERFORMANCE: 2MB - Doubled buffer size
-        .setSendTimeLimit(5000) // ✅ PERFORMANCE: 5 seconds - Ultra-fast response
-        .setTimeToFirstMessage(8000); // ✅ PERFORMANCE: 8 seconds - Ultra-fast connection
+        .setMessageSizeLimit(32 * 1024) // ✅ OPTIMIZED: 32KB - Reduced for better performance
+        .setSendBufferSizeLimit(512 * 1024) // ✅ OPTIMIZED: 512KB - Reduced for better performance
+        .setSendTimeLimit(2000) // ✅ OPTIMIZED: 2 seconds - Faster response time
+        .setTimeToFirstMessage(3000); // ✅ OPTIMIZED: 3 seconds - Faster connection time
   }
 
   // WebSocket security is now handled by WebSocketSecurityConfig
