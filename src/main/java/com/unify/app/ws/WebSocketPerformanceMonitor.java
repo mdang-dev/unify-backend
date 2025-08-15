@@ -19,6 +19,7 @@ public class WebSocketPerformanceMonitor {
 
   private final AtomicReference<Long> lastMetricsLog =
       new AtomicReference<>(System.currentTimeMillis());
+
   private static final long METRICS_LOG_INTERVAL = 300000;
   private static final int MAX_ACTIVE_CONNECTIONS = 2000;
 
@@ -67,7 +68,7 @@ public class WebSocketPerformanceMonitor {
 
     if (lastLog == null || (currentTime - lastLog) >= METRICS_LOG_INTERVAL) {
       lastMetricsLog.set(currentTime);
-
+      
       long sent = totalMessagesSent.get();
       long received = totalMessagesReceived.get();
       int connections = activeConnections.get();

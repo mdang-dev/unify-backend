@@ -31,7 +31,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             "https://unify.qzz.io",
             "https://*.unify.qzz.io",
             "https://unify.id.vn",
-            "https://*.unify.id.vn")
+            "https://*.unify.id.vn"
+            )
         .withSockJS()
         .setHeartbeatTime(25000)
         .setDisconnectDelay(15000)

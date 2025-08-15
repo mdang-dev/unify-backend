@@ -116,7 +116,6 @@ public class WebSocketConnectionManager {
                 }
                 return false;
               });
-
     } catch (Exception e) {
       log.error("Error handling session disconnect event: {}", e.getMessage());
     }
