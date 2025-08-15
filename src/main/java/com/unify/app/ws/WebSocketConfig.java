@@ -26,17 +26,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     registry
         .addEndpoint("/ws")
         .setAllowedOriginPatterns(
-            "http://localhost:3000", // Frontend development
-            "http://localhost:3001", // Frontend alternative port
-            "https://unify.qzz.io", // Production domain
-            "https://*.unify.qzz.io", // Subdomains
-            "https://unify.id.vn", // Production domain
-            "https://*.unify.id.vn" // Subdomains
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "https://unify.qzz.io",
+            "https://*.unify.qzz.io",
+            "https://unify.id.vn",
+            "https://*.unify.id.vn"
             )
         .withSockJS()
-        .setHeartbeatTime(20000) // ✅ OPTIMIZED: Increased for better stability
-        .setDisconnectDelay(10000) // ✅ OPTIMIZED: Increased for graceful disconnection
-        .setHttpMessageCacheSize(200) // ✅ OPTIMIZED: Reduced to prevent memory leaks
+        .setHeartbeatTime(25000)
+        .setDisconnectDelay(15000)
+        .setHttpMessageCacheSize(300)
         .setWebSocketEnabled(true)
         .setSessionCookieNeeded(false);
   }
@@ -46,25 +46,22 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     registry.enableSimpleBroker("/topic", "/queue", "/user");
     registry.setApplicationDestinationPrefixes("/app");
     registry.setUserDestinationPrefix("/user");
-
-    // ✅ OPTIMIZED: Add message size limits to prevent memory issues
     registry.setPreservePublishOrder(true);
   }
 
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
-    // ✅ OPTIMIZED: Balanced ThreadPoolTaskExecutor for real-time chat
     ThreadPoolTaskExecutor inboundExecutor = new ThreadPoolTaskExecutor();
-    inboundExecutor.setCorePoolSize(2); // ✅ OPTIMIZED: Reduced for better resource management
-    inboundExecutor.setMaxPoolSize(4); // ✅ OPTIMIZED: Reduced for better resource management
-    inboundExecutor.setQueueCapacity(50); // ✅ OPTIMIZED: Reduced to prevent memory buildup
+    inboundExecutor.setCorePoolSize(4);
+    inboundExecutor.setMaxPoolSize(8);
+    inboundExecutor.setQueueCapacity(100);
     inboundExecutor.setThreadNamePrefix("ws-inbound-");
-    inboundExecutor.setKeepAliveSeconds(30); // ✅ OPTIMIZED: Reduced for faster cleanup
-    inboundExecutor.setAllowCoreThreadTimeOut(true); // ✅ OPTIMIZED: Allow core threads to timeout
-    inboundExecutor.setWaitForTasksToCompleteOnShutdown(true); // ✅ OPTIMIZED: Graceful shutdown
-    inboundExecutor.setAwaitTerminationSeconds(15); // ✅ OPTIMIZED: Faster shutdown
+    inboundExecutor.setKeepAliveSeconds(45);
+    inboundExecutor.setAllowCoreThreadTimeOut(true);
+    inboundExecutor.setWaitForTasksToCompleteOnShutdown(true);
+    inboundExecutor.setAwaitTerminationSeconds(20);
     inboundExecutor.setRejectedExecutionHandler(
-        new ThreadPoolExecutor.CallerRunsPolicy()); // ✅ OPTIMIZED: Prevent task rejection
+        new ThreadPoolExecutor.CallerRunsPolicy());
     inboundExecutor.initialize();
 
     registration.interceptors(webSocketAuthInterceptor).taskExecutor(inboundExecutor);
@@ -72,18 +69,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   @Override
   public void configureClientOutboundChannel(ChannelRegistration registration) {
-    // ✅ OPTIMIZED: Balanced ThreadPoolTaskExecutor for outbound messages
     ThreadPoolTaskExecutor outboundExecutor = new ThreadPoolTaskExecutor();
-    outboundExecutor.setCorePoolSize(2); // ✅ OPTIMIZED: Reduced for better resource management
-    outboundExecutor.setMaxPoolSize(4); // ✅ OPTIMIZED: Reduced for better resource management
-    outboundExecutor.setQueueCapacity(50); // ✅ OPTIMIZED: Reduced to prevent memory buildup
+    outboundExecutor.setCorePoolSize(4);
+    outboundExecutor.setMaxPoolSize(8);
+    outboundExecutor.setQueueCapacity(100);
     outboundExecutor.setThreadNamePrefix("ws-outbound-");
-    outboundExecutor.setKeepAliveSeconds(30); // ✅ OPTIMIZED: Reduced for faster cleanup
-    outboundExecutor.setAllowCoreThreadTimeOut(true); // ✅ OPTIMIZED: Allow core threads to timeout
-    outboundExecutor.setWaitForTasksToCompleteOnShutdown(true); // ✅ OPTIMIZED: Graceful shutdown
-    outboundExecutor.setAwaitTerminationSeconds(15); // ✅ OPTIMIZED: Faster shutdown
+    outboundExecutor.setKeepAliveSeconds(45);
+    outboundExecutor.setAllowCoreThreadTimeOut(true);
+    outboundExecutor.setWaitForTasksToCompleteOnShutdown(true);
+    outboundExecutor.setAwaitTerminationSeconds(20);
     outboundExecutor.setRejectedExecutionHandler(
-        new ThreadPoolExecutor.CallerRunsPolicy()); // ✅ OPTIMIZED: Prevent task rejection
+        new ThreadPoolExecutor.CallerRunsPolicy());
     outboundExecutor.initialize();
 
     registration.taskExecutor(outboundExecutor);
@@ -92,12 +88,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
     registration
-        .setMessageSizeLimit(32 * 1024) // ✅ OPTIMIZED: 32KB - Reduced for better performance
-        .setSendBufferSizeLimit(512 * 1024) // ✅ OPTIMIZED: 512KB - Reduced for better performance
-        .setSendTimeLimit(2000) // ✅ OPTIMIZED: 2 seconds - Faster response time
-        .setTimeToFirstMessage(3000); // ✅ OPTIMIZED: 3 seconds - Faster connection time
+        .setMessageSizeLimit(64 * 1024)
+        .setSendBufferSizeLimit(1 * 1024 * 1024)
+        .setSendTimeLimit(3000)
+        .setTimeToFirstMessage(5000);
   }
-
-  // WebSocket security is now handled by WebSocketSecurityConfig
-  // This prevents conflicts with the separate security configuration
 }
