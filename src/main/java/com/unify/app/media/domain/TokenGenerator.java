@@ -50,7 +50,6 @@ public class TokenGenerator {
 
       String jwtToken = token.toJwt();
 
-
       return TokenResponse.success(jwtToken);
 
     } catch (JsonProcessingException e) {

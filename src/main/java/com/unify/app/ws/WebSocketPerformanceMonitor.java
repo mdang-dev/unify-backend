@@ -16,8 +16,9 @@ public class WebSocketPerformanceMonitor {
   private final AtomicInteger activeConnections = new AtomicInteger(0);
   private final AtomicLong totalConnectionTime = new AtomicLong(0);
   private final AtomicLong messageProcessingTime = new AtomicLong(0);
-  
-  private final AtomicReference<Long> lastMetricsLog = new AtomicReference<>(System.currentTimeMillis());
+
+  private final AtomicReference<Long> lastMetricsLog =
+      new AtomicReference<>(System.currentTimeMillis());
   private static final long METRICS_LOG_INTERVAL = 300000;
   private static final int MAX_ACTIVE_CONNECTIONS = 2000;
 
@@ -31,7 +32,7 @@ public class WebSocketPerformanceMonitor {
 
   public void incrementActiveConnections() {
     int current = activeConnections.incrementAndGet();
-    
+
     if (current > MAX_ACTIVE_CONNECTIONS) {
       log.warn("Active connections limit reached: {}", current);
       activeConnections.decrementAndGet();
@@ -63,10 +64,10 @@ public class WebSocketPerformanceMonitor {
   public void logPerformanceMetrics() {
     long currentTime = System.currentTimeMillis();
     Long lastLog = lastMetricsLog.get();
-    
+
     if (lastLog == null || (currentTime - lastLog) >= METRICS_LOG_INTERVAL) {
       lastMetricsLog.set(currentTime);
-      
+
       long sent = totalMessagesSent.get();
       long received = totalMessagesReceived.get();
       int connections = activeConnections.get();
@@ -82,12 +83,12 @@ public class WebSocketPerformanceMonitor {
           (sent + received) > 0 ? messageProcessingTime.get() / (sent + received) : 0);
     }
   }
-  
+
   public boolean isHealthy() {
     int connections = activeConnections.get();
     return connections >= 0 && connections <= MAX_ACTIVE_CONNECTIONS;
   }
-  
+
   public void resetMetrics() {
     totalMessagesSent.set(0);
     totalMessagesReceived.set(0);

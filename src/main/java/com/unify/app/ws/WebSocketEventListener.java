@@ -69,11 +69,12 @@ public class WebSocketEventListener {
     try {
       boolean isHealthy = connectionManager.isHealthy();
       if (!isHealthy) {
-        log.warn("WebSocket health check failed - too many connections: {}", 
-                connectionManager.getTotalConnections());
+        log.warn(
+            "WebSocket health check failed - too many connections: {}",
+            connectionManager.getTotalConnections());
       }
     } catch (Exception e) {
       log.error("Error during WebSocket health check: {}", e.getMessage());
     }
   }
-} 
+}

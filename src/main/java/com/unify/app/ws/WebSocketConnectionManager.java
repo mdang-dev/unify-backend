@@ -1,5 +1,8 @@
 package com.unify.app.ws;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
@@ -8,17 +11,13 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
 @Slf4j
 @Component
 public class WebSocketConnectionManager {
 
   private final Map<String, UserConnectionInfo> userConnections = new ConcurrentHashMap<>();
   private final AtomicInteger totalConnections = new AtomicInteger(0);
-  
+
   private static final int MAX_TOTAL_CONNECTIONS = 1000;
   private static final int MAX_CONNECTIONS_PER_USER = 5;
   private static final long CONNECTION_TIMEOUT_MS = 600000;
@@ -50,10 +49,21 @@ public class WebSocketConnectionManager {
       }
     }
 
-    public String getUserId() { return userId; }
-    public long getConnectedAt() { return connectedAt; }
-    public String getSessionId() { return sessionId; }
-    public int getSubscriptionCount() { return subscriptionCount; }
+    public String getUserId() {
+      return userId;
+    }
+
+    public long getConnectedAt() {
+      return connectedAt;
+    }
+
+    public String getSessionId() {
+      return sessionId;
+    }
+
+    public int getSubscriptionCount() {
+      return subscriptionCount;
+    }
   }
 
   public boolean canAcceptConnection(String userId, String sessionId) {
@@ -95,15 +105,18 @@ public class WebSocketConnectionManager {
     try {
       StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
       String sessionId = accessor.getSessionId();
-      
-      userConnections.entrySet().removeIf(entry -> {
-        if (entry.getValue().getSessionId().equals(sessionId)) {
-          totalConnections.decrementAndGet();
-          return true;
-        }
-        return false;
-      });
-      
+
+      userConnections
+          .entrySet()
+          .removeIf(
+              entry -> {
+                if (entry.getValue().getSessionId().equals(sessionId)) {
+                  totalConnections.decrementAndGet();
+                  return true;
+                }
+                return false;
+              });
+
     } catch (Exception e) {
       log.error("Error handling session disconnect event: {}", e.getMessage());
     }
@@ -113,12 +126,12 @@ public class WebSocketConnectionManager {
     try {
       StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
       String sessionId = accessor.getSessionId();
-      
+
       userConnections.values().stream()
           .filter(info -> info.getSessionId().equals(sessionId))
           .findFirst()
           .ifPresent(UserConnectionInfo::incrementSubscriptions);
-          
+
     } catch (Exception e) {
       log.error("Error handling session subscribe event: {}", e.getMessage());
     }
@@ -128,12 +141,12 @@ public class WebSocketConnectionManager {
     try {
       StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
       String sessionId = accessor.getSessionId();
-      
+
       userConnections.values().stream()
           .filter(info -> info.getSessionId().equals(sessionId))
           .findFirst()
           .ifPresent(UserConnectionInfo::decrementSubscriptions);
-          
+
     } catch (Exception e) {
       log.error("Error handling session unsubscribe event: {}", e.getMessage());
     }
@@ -143,23 +156,30 @@ public class WebSocketConnectionManager {
     try {
       int beforeSize = userConnections.size();
       int beforeTotal = totalConnections.get();
-      
-      userConnections.entrySet().removeIf(entry -> {
-        if (entry.getValue().isExpired()) {
-          totalConnections.decrementAndGet();
-          return true;
-        }
-        return false;
-      });
-      
+
+      userConnections
+          .entrySet()
+          .removeIf(
+              entry -> {
+                if (entry.getValue().isExpired()) {
+                  totalConnections.decrementAndGet();
+                  return true;
+                }
+                return false;
+              });
+
       int afterSize = userConnections.size();
       int afterTotal = totalConnections.get();
-      
+
       if (beforeSize != afterSize || beforeTotal != afterTotal) {
-        log.info("Cleaned up expired connections: users {}->{}, total {}->{}", 
-                beforeSize, afterSize, beforeTotal, afterTotal);
+        log.info(
+            "Cleaned up expired connections: users {}->{}, total {}->{}",
+            beforeSize,
+            afterSize,
+            beforeTotal,
+            afterTotal);
       }
-      
+
     } catch (Exception e) {
       log.error("Error cleaning up expired connections: {}", e.getMessage());
     }
@@ -180,4 +200,4 @@ public class WebSocketConnectionManager {
   public boolean isHealthy() {
     return totalConnections.get() <= MAX_TOTAL_CONNECTIONS;
   }
-} 
+}

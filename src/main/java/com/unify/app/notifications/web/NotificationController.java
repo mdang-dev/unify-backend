@@ -48,8 +48,6 @@ class NotificationController {
               notifications.getNumber(),
               unreadCount);
 
-
-
       return ResponseEntity.ok(response);
     } catch (Exception e) {
       log.error("Failed to get notifications for user {}: {}", userId, e.getMessage(), e);
@@ -69,7 +67,6 @@ class NotificationController {
 
       long unreadCount = notificationService.getUnreadCount(userId);
 
-
       return ResponseEntity.ok(new UnreadCountResponse(unreadCount));
     } catch (Exception e) {
       log.error("Failed to get unread count for user {}: {}", userId, e.getMessage(), e);
@@ -87,7 +84,6 @@ class NotificationController {
       }
 
       notificationService.markAsRead(request.notificationId(), request.userId());
-
 
       return ResponseEntity.ok().build();
     } catch (IllegalArgumentException e) {

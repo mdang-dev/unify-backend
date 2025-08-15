@@ -113,8 +113,6 @@ public class CommentService {
           String.format(
               "{\"commentId\":\"%s\",\"postId\":\"%s\"}", savedComment.getId(), post.getId());
 
-
-
       notificationService.createAndSendNotification(
           commenterId, notificationReceiverId, NotificationType.COMMENT, message, link, data);
     } catch (Exception e) {

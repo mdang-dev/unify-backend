@@ -378,8 +378,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>
-                        -XX:+EnableDynamicAgentLoading
-                        -Djdk.instrument.traceUsage
                     </argLine>
                     <systemPropertyVariables>
                         <mockito.inline.mockmaker>true</mockito.inline.mockmaker>

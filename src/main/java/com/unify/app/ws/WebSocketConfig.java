@@ -31,8 +31,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             "https://unify.qzz.io",
             "https://*.unify.qzz.io",
             "https://unify.id.vn",
-            "https://*.unify.id.vn"
-            )
+            "https://*.unify.id.vn")
         .withSockJS()
         .setHeartbeatTime(25000)
         .setDisconnectDelay(15000)
@@ -60,8 +59,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     inboundExecutor.setAllowCoreThreadTimeOut(true);
     inboundExecutor.setWaitForTasksToCompleteOnShutdown(true);
     inboundExecutor.setAwaitTerminationSeconds(20);
-    inboundExecutor.setRejectedExecutionHandler(
-        new ThreadPoolExecutor.CallerRunsPolicy());
+    inboundExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
     inboundExecutor.initialize();
 
     registration.interceptors(webSocketAuthInterceptor).taskExecutor(inboundExecutor);
@@ -78,8 +76,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     outboundExecutor.setAllowCoreThreadTimeOut(true);
     outboundExecutor.setWaitForTasksToCompleteOnShutdown(true);
     outboundExecutor.setAwaitTerminationSeconds(20);
-    outboundExecutor.setRejectedExecutionHandler(
-        new ThreadPoolExecutor.CallerRunsPolicy());
+    outboundExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
     outboundExecutor.initialize();
 
     registration.taskExecutor(outboundExecutor);

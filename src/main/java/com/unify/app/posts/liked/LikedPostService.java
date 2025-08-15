@@ -99,7 +99,6 @@ public class LikedPostService {
 
       likedPostRepository.deleteByUserIdAndPostId(request.userId(), request.postId());
 
-
     } catch (Exception e) {
       log.error("Failed to delete liked post: {}", e.getMessage(), e);
       throw e;
