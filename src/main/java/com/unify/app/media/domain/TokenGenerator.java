@@ -49,7 +49,7 @@ public class TokenGenerator {
       token.addGrants(new RoomJoin(true), new RoomName(room));
 
       String jwtToken = token.toJwt();
-      log.debug("Token created successfully for user: {} in room: {}", userId, room);
+
 
       return TokenResponse.success(jwtToken);
 

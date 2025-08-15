@@ -48,12 +48,7 @@ class NotificationController {
               notifications.getNumber(),
               unreadCount);
 
-      log.debug(
-          "Retrieved {} notifications for user {} (page {}, size {})",
-          notifications.getContent().size(),
-          userId,
-          page,
-          size);
+
 
       return ResponseEntity.ok(response);
     } catch (Exception e) {
@@ -73,7 +68,7 @@ class NotificationController {
       }
 
       long unreadCount = notificationService.getUnreadCount(userId);
-      log.debug("Unread count for user {}: {}", userId, unreadCount);
+
 
       return ResponseEntity.ok(new UnreadCountResponse(unreadCount));
     } catch (Exception e) {
@@ -92,10 +87,7 @@ class NotificationController {
       }
 
       notificationService.markAsRead(request.notificationId(), request.userId());
-      log.debug(
-          "Marked notification {} as read for user: {}",
-          request.notificationId(),
-          request.userId());
+
 
       return ResponseEntity.ok().build();
     } catch (IllegalArgumentException e) {
@@ -134,7 +126,7 @@ class NotificationController {
   public void sendNotification(NotificationDto dto) {
     try {
       messagingTemplate.convertAndSendToUser(dto.getReceiver(), "/queue/notifications", dto);
-      log.debug("WebSocket notification sent to user: {}", dto.getReceiver());
+
     } catch (Exception e) {
       log.error("Failed to send WebSocket notification: {}", e.getMessage(), e);
     }

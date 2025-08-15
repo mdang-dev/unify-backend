@@ -248,7 +248,7 @@ public class MessageService {
       // Update receiver's chat list
       List<ChatDto> receiverChatList = getChatList(receiverId);
 
-      log.debug("Updated chat list cache for users: {} and {}", senderId, receiverId);
+
     } catch (Exception e) {
       log.warn("Failed to update chat list cache: {}", e.getMessage());
     }

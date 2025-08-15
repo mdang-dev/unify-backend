@@ -94,10 +94,6 @@ public class CommentService {
 
       // Don't send notification if user comments on their own post
       if (commenterId.equals(postAuthorId)) {
-        log.debug(
-            "User {} commented on their own post {}, skipping notification",
-            commenterId,
-            post.getId());
         return;
       }
 
@@ -106,7 +102,6 @@ public class CommentService {
 
       // Don't send notification if replying to own comment
       if (commenterId.equals(notificationReceiverId)) {
-        log.debug("User {} replied to their own comment, skipping notification", commenterId);
         return;
       }
 
@@ -118,11 +113,7 @@ public class CommentService {
           String.format(
               "{\"commentId\":\"%s\",\"postId\":\"%s\"}", savedComment.getId(), post.getId());
 
-      log.debug(
-          "Sending comment notification: user {} commented on post {} by user {}",
-          commenterId,
-          post.getId(),
-          notificationReceiverId);
+
 
       notificationService.createAndSendNotification(
           commenterId, notificationReceiverId, NotificationType.COMMENT, message, link, data);

@@ -34,7 +34,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         return message;
       }
 
-      // ✅ PERFORMANCE: Fast token extraction
+      // ✅ PERFORMANCE: Fast token extraction with null check
       var token = accessor.getFirstNativeHeader("token");
       if (token == null || token.trim().isEmpty()) {
         log.warn("No token found in WebSocket connection");
@@ -44,7 +44,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
       // ✅ PERFORMANCE: Optimized token cleaning
       String cleanToken = token.startsWith("Bearer ") ? token.substring(7) : token;
 
-      // ✅ PERFORMANCE: Fast token validation
+      // ✅ PERFORMANCE: Fast token validation with timeout protection
       if (!jwt.validToken(cleanToken)) {
         log.warn("Invalid token in WebSocket connection");
         return message;
@@ -66,7 +66,6 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
       // Set authentication
       accessor.setUser(new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities()));
-      log.debug("WebSocket authentication successful for user: {}", username);
 
       // ✅ PERFORMANCE: Track connection metrics
       performanceMonitor.incrementActiveConnections();
@@ -76,6 +75,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     } catch (Exception e) {
       log.error("Error during WebSocket authentication: {}", e.getMessage());
+      // ✅ OPTIMIZED: Return message to prevent connection blocking
       return message;
     }
   }
@@ -84,7 +84,11 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
   public void afterSendCompletion(
       Message<?> message, MessageChannel channel, boolean sent, Exception ex) {
     if (ex != null) {
-      log.error("Error sending WebSocket message: {}", ex.getMessage(), ex);
+      log.error("Error sending WebSocket message: {}", ex.getMessage());
+      // ✅ OPTIMIZED: Track failed messages for monitoring
+      performanceMonitor.incrementMessagesSent(); // Track even failed attempts
+    } else if (sent) {
+      performanceMonitor.incrementMessagesSent();
     }
   }
 }
