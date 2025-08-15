@@ -15,6 +15,6 @@ WORKDIR /app
 
 COPY --from=builder /app/target/*.jar app.jar
 
-ENV JAVA_OPTS="-Xms512m -Xmx1g -Dfile.encoding=UTF-8"
+ENV JAVA_OPTS="-Xms1g -Xmx2g -Dfile.encoding=UTF-8"
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

@@ -248,6 +248,7 @@ public class MessageService {
       // Update receiver's chat list
       List<ChatDto> receiverChatList = getChatList(receiverId);
 
+      log.debug("Updated chat list cache for users: {} and {}", senderId, receiverId);
     } catch (Exception e) {
       log.warn("Failed to update chat list cache: {}", e.getMessage());
     }
@@ -296,7 +297,8 @@ public class MessageService {
         foundMessage = messageRepository.findByClientTempId(clientTempId).orElse(null);
       }
 
-      // ✅ IMPROVED: Also try to find by content and recent timestamp if still not found
+      // ✅ IMPROVED: Also try to find by content and recent timestamp if still not
+      // found
       if (foundMessage == null && clientTempId != null) {
         // Look for messages with the same clientTempId in the last 10 minutes
         LocalDateTime tenMinutesAgo = LocalDateTime.now().minusMinutes(10);

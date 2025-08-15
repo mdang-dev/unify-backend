@@ -55,7 +55,8 @@ public class MessageController {
       // ✅ IMPROVED: Ensure message is saved to database first before broadcasting
       MessageDto savedMessage = messageService.saveMessage(updateMessage);
 
-      // ✅ IMPROVED: Send saved message to both users with server timestamp to avoid clock skew
+      // ✅ IMPROVED: Send saved message to both users with server timestamp to avoid
+      // clock skew
       // issues
       messagingTemplate.convertAndSendToUser(
           savedMessage.receiver(), "/queue/messages", savedMessage);
@@ -64,6 +65,13 @@ public class MessageController {
 
       // ✅ IMPROVED: Broadcast chat list updates to both users after successful save
       broadcastChatListUpdate(savedMessage.sender(), savedMessage.receiver());
+
+      // ✅ LOGGING: Log successful message delivery for debugging
+      log.debug(
+          "Message sent successfully: {} -> {}, content: {}",
+          savedMessage.sender(),
+          savedMessage.receiver(),
+          savedMessage.content());
 
     } catch (Exception e) {
       log.error("Failed to send message: {}", e.getMessage());
@@ -259,13 +267,16 @@ public class MessageController {
               .map(
                   message ->
                       Map.of(
-                          "messageId", (Object) message.id(),
+                          "messageId",
+                          (Object) message.id(),
                           "clientTempId",
-                              (Object)
-                                  (message.clientTempId() != null ? message.clientTempId() : ""),
-                          "status", (Object) mapToMessageStatus(message),
-                          "timestamp", (Object) message.timestamp(),
-                          "serverConfirmed", (Object) true))
+                          (Object) (message.clientTempId() != null ? message.clientTempId() : ""),
+                          "status",
+                          (Object) mapToMessageStatus(message),
+                          "timestamp",
+                          (Object) message.timestamp(),
+                          "serverConfirmed",
+                          (Object) true))
               .toList();
 
       return ResponseEntity.ok(statuses);
