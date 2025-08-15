@@ -68,7 +68,7 @@ public class WebSocketPerformanceMonitor {
 
     if (lastLog == null || (currentTime - lastLog) >= METRICS_LOG_INTERVAL) {
       lastMetricsLog.set(currentTime);
-      
+
       long sent = totalMessagesSent.get();
       long received = totalMessagesReceived.get();
       int connections = activeConnections.get();
