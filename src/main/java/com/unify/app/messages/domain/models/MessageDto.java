@@ -16,13 +16,15 @@ public record MessageDto(
     String clientTempId) {
 
   public static MessageDto withCurrentTimestamp(MessageDto message) {
-    // Ensure a server-generated id exists to keep ordering stable across clients before persistence
+    // Ensure a server-generated id exists to keep ordering stable across clients
+    // before persistence
     String ensuredId =
         (message.id() == null || message.id().isBlank())
             ? new ObjectId().toHexString()
             : message.id();
 
-    // ✅ VIETNAM TIMEZONE: Always use server timestamp to ensure consistency across all clients
+    // ✅ VIETNAM TIMEZONE: Always use server timestamp to ensure consistency across
+    // all clients
     // This prevents clock skew issues between different client devices
     LocalDateTime finalTimestamp = DateTimeUtils.nowVietnam();
 
