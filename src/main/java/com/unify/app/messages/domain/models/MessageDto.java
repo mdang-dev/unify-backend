@@ -22,16 +22,16 @@ public record MessageDto(
             ? new ObjectId().toHexString()
             : message.id();
 
-    // ✅ VIETNAM TIMEZONE: Use frontend timestamp if provided, otherwise server time
-    LocalDateTime finalTimestamp =
-        message.timestamp() != null ? message.timestamp() : DateTimeUtils.nowVietnam();
+    // ✅ VIETNAM TIMEZONE: Always use server timestamp to ensure consistency across all clients
+    // This prevents clock skew issues between different client devices
+    LocalDateTime finalTimestamp = DateTimeUtils.nowVietnam();
 
     return new MessageDto(
         ensuredId,
         message.sender(),
         message.receiver(),
         message.content(),
-        finalTimestamp, // ✅ Use frontend or server Vietnam time
+        finalTimestamp, // ✅ Always use server Vietnam time for consistency
         message.fileUrls(),
         message.type(),
         message.clientTempId());
