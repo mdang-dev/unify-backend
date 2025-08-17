@@ -1,10 +1,12 @@
 package com.unify.app.users.domain;
 
+import com.unify.app.users.domain.models.AvatarDto;
 import com.unify.app.users.domain.models.ShareAbleUserDto;
 import com.unify.app.users.domain.models.UserDto;
 import com.unify.app.users.domain.models.UserReportCountDto;
 import com.unify.app.users.domain.models.auth.CreateUserCmd;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -58,24 +60,39 @@ public class UserService {
   public UserDto createUser(CreateUserCmd userDto) {
     User user = userMapper.toUser(userDto);
     user.setPassword(encryptPassword(userDto.password()));
+
+    // Set default values for optional fields
     if (user.getReportApprovalCount() == null) {
       user.setReportApprovalCount(0);
     }
+    if (user.getGender() == null) {
+      user.setGender(false); // Default to false
+    }
+    if (user.getStatus() == null) {
+      user.setStatus(0); // Default status: normal
+    }
+
     Role role =
         roleRepository
             .findByName("USER")
             .orElseThrow(() -> new RuntimeException("Role not found !"));
-    user.setRoles(Collections.singleton(role));
+    Set<Role> roles = new HashSet<>();
+    roles.add(role);
+    user.setRoles(roles);
 
     // Save user first
     User savedUser = userRepository.save(user);
 
-    // Create default avatar
-    Avatar avatar = Avatar.builder().url(avatarUrl).user(savedUser).build();
+    // Create default avatar using AvatarDto
+    AvatarDto avatarDto = new AvatarDto(null, avatarUrl, LocalDateTime.now());
+    Avatar avatar = avatarMapper.toAvatar(avatarDto);
+    avatar.setUser(savedUser);
     avatar = avatarRepository.save(avatar);
 
-    // Set avatar to user
-    savedUser.setAvatars(Set.of(avatar));
+    // Set avatar to user using a mutable set to avoid Hibernate issues
+    Set<Avatar> avatars = new HashSet<>();
+    avatars.add(avatar);
+    savedUser.setAvatars(avatars);
     savedUser = userRepository.save(savedUser);
 
     // streamService.createInitStream(user.getUsername(), user);
