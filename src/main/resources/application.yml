@@ -1,11 +1,5 @@
 server:
   port: 8080
-  tomcat:
-    max-threads: 300
-    min-spare-threads: 20
-    max-connections: 15000
-    accept-count: 200
-    connection-timeout: 30000
 
 spring:
   application:
