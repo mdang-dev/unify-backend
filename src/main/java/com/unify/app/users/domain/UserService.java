@@ -213,8 +213,16 @@ public class UserService {
 
     // Handle avatar update if provided
     if (userDto.avatar() != null && userDto.avatar().url() != null) {
-      Avatar newAvatar = new Avatar();
-      newAvatar.setUrl(userDto.avatar().url());
+      // Create avatar using AvatarDto with createdAt
+      AvatarDto avatarDto =
+          new AvatarDto(
+              userDto.avatar().id(),
+              userDto.avatar().url(),
+              userDto.avatar().createdAt() != null
+                  ? userDto.avatar().createdAt()
+                  : LocalDateTime.now());
+
+      Avatar newAvatar = avatarMapper.toAvatar(avatarDto);
       newAvatar.setUser(existingUser);
 
       // Save the new avatar
