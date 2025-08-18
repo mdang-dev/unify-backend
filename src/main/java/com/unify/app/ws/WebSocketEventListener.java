@@ -1,7 +1,7 @@
 package com.unify.app.ws;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -10,13 +10,19 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class WebSocketEventListener {
+
+  private static final Logger log = LoggerFactory.getLogger(WebSocketEventListener.class);
 
   private final WebSocketConnectionManager connectionManager;
   private final WebSocketPerformanceMonitor performanceMonitor;
+
+  // ✅ NEW: Constructor for dependency injection
+  public WebSocketEventListener(WebSocketConnectionManager connectionManager, WebSocketPerformanceMonitor performanceMonitor) {
+    this.connectionManager = connectionManager;
+    this.performanceMonitor = performanceMonitor;
+  }
 
   @EventListener
   public void handleSessionConnected(SessionConnectedEvent event) {
@@ -69,8 +75,8 @@ public class WebSocketEventListener {
     try {
       boolean isHealthy = connectionManager.isHealthy();
       if (!isHealthy) {
-        log.warn(
-            "WebSocket health check failed - too many connections: {}",
+        // Only log critical health issues
+        log.error("WebSocket health check failed - too many connections: {}", 
             connectionManager.getTotalConnections());
       }
     } catch (Exception e) {
