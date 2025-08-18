@@ -2,89 +2,80 @@ package com.unify.app.ws;
 
 import java.util.HashMap;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @RestController
-@RequestMapping("/ws/health")
-@RequiredArgsConstructor
+@RequestMapping("/api/ws/health")
 public class WebSocketHealthController {
 
   private final WebSocketPerformanceMonitor performanceMonitor;
+  private final WebSocketConnectionManager connectionManager;
+
+  // ✅ NEW: Constructor for dependency injection
+  public WebSocketHealthController(
+      WebSocketPerformanceMonitor performanceMonitor,
+      WebSocketConnectionManager connectionManager) {
+    this.performanceMonitor = performanceMonitor;
+    this.connectionManager = connectionManager;
+  }
 
   @GetMapping
-  public ResponseEntity<Map<String, Object>> getWebSocketHealth() {
-    try {
-      Map<String, Object> health = new HashMap<>();
+  public ResponseEntity<Map<String, Object>> getHealthStatus() {
+    Map<String, Object> healthData = new HashMap<>();
 
-      health.put("status", performanceMonitor.isHealthy() ? "UP" : "DOWN");
-      health.put("timestamp", System.currentTimeMillis());
+    // Basic health status
+    healthData.put("status", performanceMonitor.getHealthStatus());
+    healthData.put("healthy", performanceMonitor.isHealthy());
 
-      health.put("activeConnections", performanceMonitor.getActiveConnections());
-      health.put("totalMessagesSent", performanceMonitor.getTotalMessagesSent());
-      health.put("totalMessagesReceived", performanceMonitor.getTotalMessagesReceived());
+    // Connection metrics
+    healthData.put("activeConnections", performanceMonitor.getActiveConnections());
+    healthData.put("totalConnections", connectionManager.getTotalConnections());
+    healthData.put("userConnections", connectionManager.getUserConnectionCount());
 
-      health.put("maxConnections", 1000);
-      health.put("maxConnectionsPerUser", 5);
+    // Performance metrics
+    healthData.put("totalMessagesSent", performanceMonitor.getTotalMessagesSent());
+    healthData.put("totalMessagesReceived", performanceMonitor.getTotalMessagesReceived());
+    healthData.put("avgLatency", performanceMonitor.getAvgLatency());
+    healthData.put("maxLatency", performanceMonitor.getMaxLatency());
+    healthData.put("minLatency", performanceMonitor.getMinLatency());
 
-      long estimatedMemoryUsage = performanceMonitor.getActiveConnections() * 1024;
-      health.put("estimatedMemoryUsageKB", estimatedMemoryUsage);
+    // Error metrics
+    healthData.put("connectionErrors", performanceMonitor.getConnectionErrors());
+    healthData.put("authenticationFailures", performanceMonitor.getAuthenticationFailures());
 
-      boolean isHealthy = performanceMonitor.isHealthy();
-      health.put("healthy", isHealthy);
+    // Timestamp
+    healthData.put("timestamp", System.currentTimeMillis());
 
-      if (isHealthy) {
-        return ResponseEntity.ok(health);
-      } else {
-        return ResponseEntity.status(503).body(health);
-      }
-
-    } catch (Exception e) {
-      log.error("Error getting WebSocket health: {}", e.getMessage());
-
-      Map<String, Object> error = new HashMap<>();
-      error.put("status", "ERROR");
-      error.put("error", e.getMessage());
-      error.put("timestamp", System.currentTimeMillis());
-
-      return ResponseEntity.status(500).body(error);
-    }
+    return ResponseEntity.ok(healthData);
   }
 
-  @PostMapping("/reset")
+  @GetMapping("/metrics")
+  public ResponseEntity<Map<String, Object>> getDetailedMetrics() {
+    Map<String, Object> metrics = new HashMap<>();
+
+    // Connection details
+    metrics.put("connections", connectionManager.getUserConnections());
+
+    // Performance thresholds
+    metrics.put("maxConnections", 2000);
+    metrics.put("highConnectionThreshold", 1500);
+    metrics.put("highLatencyThreshold", 1000);
+    metrics.put("highErrorThreshold", 100);
+
+    return ResponseEntity.ok(metrics);
+  }
+
+  @GetMapping("/reset")
   public ResponseEntity<Map<String, String>> resetMetrics() {
-    try {
-      performanceMonitor.resetMetrics();
+    performanceMonitor.resetMetrics();
 
-      Map<String, String> response = new HashMap<>();
-      response.put("status", "SUCCESS");
-      response.put("message", "WebSocket metrics reset successfully");
-      response.put("timestamp", String.valueOf(System.currentTimeMillis()));
+    Map<String, String> response = new HashMap<>();
+    response.put("message", "Metrics reset successfully");
+    response.put("timestamp", String.valueOf(System.currentTimeMillis()));
 
-      return ResponseEntity.ok(response);
-
-    } catch (Exception e) {
-      log.error("Error resetting WebSocket metrics: {}", e.getMessage());
-
-      Map<String, String> error = new HashMap<>();
-      error.put("status", "ERROR");
-      error.put("error", e.getMessage());
-      error.put("timestamp", String.valueOf(System.currentTimeMillis()));
-
-      return ResponseEntity.status(500).body(error);
-    }
-  }
-
-  @GetMapping("/status")
-  public ResponseEntity<Map<String, String>> getSimpleStatus() {
-    Map<String, String> status = new HashMap<>();
-    status.put("status", performanceMonitor.isHealthy() ? "UP" : "DOWN");
-    status.put("activeConnections", String.valueOf(performanceMonitor.getActiveConnections()));
-    status.put("timestamp", String.valueOf(System.currentTimeMillis()));
-
-    return ResponseEntity.ok(status);
+    return ResponseEntity.ok(response);
   }
 }

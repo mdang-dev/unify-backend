@@ -33,9 +33,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             "https://unify.id.vn",
             "https://*.unify.id.vn")
         .withSockJS()
-        .setHeartbeatTime(25000)
-        .setDisconnectDelay(15000)
-        .setHttpMessageCacheSize(300)
+        .setHeartbeatTime(15000)
+        .setDisconnectDelay(10000)
+        .setHttpMessageCacheSize(500)
         .setWebSocketEnabled(true)
         .setSessionCookieNeeded(false);
   }
@@ -51,9 +51,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
     ThreadPoolTaskExecutor inboundExecutor = new ThreadPoolTaskExecutor();
-    inboundExecutor.setCorePoolSize(4);
-    inboundExecutor.setMaxPoolSize(8);
-    inboundExecutor.setQueueCapacity(100);
+    inboundExecutor.setCorePoolSize(8);
+    inboundExecutor.setMaxPoolSize(16);
+    inboundExecutor.setQueueCapacity(200);
     inboundExecutor.setThreadNamePrefix("ws-inbound-");
     inboundExecutor.setKeepAliveSeconds(45);
     inboundExecutor.setAllowCoreThreadTimeOut(true);
@@ -68,9 +68,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void configureClientOutboundChannel(ChannelRegistration registration) {
     ThreadPoolTaskExecutor outboundExecutor = new ThreadPoolTaskExecutor();
-    outboundExecutor.setCorePoolSize(4);
-    outboundExecutor.setMaxPoolSize(8);
-    outboundExecutor.setQueueCapacity(100);
+    outboundExecutor.setCorePoolSize(8);
+    outboundExecutor.setMaxPoolSize(16);
+    outboundExecutor.setQueueCapacity(200);
     outboundExecutor.setThreadNamePrefix("ws-outbound-");
     outboundExecutor.setKeepAliveSeconds(45);
     outboundExecutor.setAllowCoreThreadTimeOut(true);
@@ -85,9 +85,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
     registration
-        .setMessageSizeLimit(64 * 1024)
-        .setSendBufferSizeLimit(1 * 1024 * 1024)
-        .setSendTimeLimit(3000)
-        .setTimeToFirstMessage(5000);
+        .setMessageSizeLimit(128 * 1024)
+        .setSendBufferSizeLimit(2 * 1024 * 1024)
+        .setSendTimeLimit(5000)
+        .setTimeToFirstMessage(8000);
   }
 }
