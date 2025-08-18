@@ -19,7 +19,9 @@ public class WebSocketEventListener {
   private final WebSocketPerformanceMonitor performanceMonitor;
 
   // ✅ NEW: Constructor for dependency injection
-  public WebSocketEventListener(WebSocketConnectionManager connectionManager, WebSocketPerformanceMonitor performanceMonitor) {
+  public WebSocketEventListener(
+      WebSocketConnectionManager connectionManager,
+      WebSocketPerformanceMonitor performanceMonitor) {
     this.connectionManager = connectionManager;
     this.performanceMonitor = performanceMonitor;
   }
@@ -76,7 +78,8 @@ public class WebSocketEventListener {
       boolean isHealthy = connectionManager.isHealthy();
       if (!isHealthy) {
         // Only log critical health issues
-        log.error("WebSocket health check failed - too many connections: {}", 
+        log.error(
+            "WebSocket health check failed - too many connections: {}",
             connectionManager.getTotalConnections());
       }
     } catch (Exception e) {
