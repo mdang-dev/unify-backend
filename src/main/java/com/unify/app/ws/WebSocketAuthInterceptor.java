@@ -54,7 +54,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     if (attempts.incrementAndGet() > MAX_ATTEMPTS_PER_MINUTE) {
       // Only log rate limit violations
-      log.warn("Rate limit exceeded for IP: {} ({} attempts in 1 minute)", clientIp, attempts.get());
+      log.warn(
+          "Rate limit exceeded for IP: {} ({} attempts in 1 minute)", clientIp, attempts.get());
       return true;
     }
 

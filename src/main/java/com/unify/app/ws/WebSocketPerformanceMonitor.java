@@ -120,26 +120,29 @@ public class WebSocketPerformanceMonitor {
     long avgLat = avgLatency.get();
     int errors = connectionErrors.get();
     int authFailures = authenticationFailures.get();
-    
+
     // Only log critical alerts
     if (connections > HIGH_CONNECTION_THRESHOLD) {
-      log.error("HIGH CONNECTION COUNT: {} connections ({}% of max)", 
+      log.error(
+          "HIGH CONNECTION COUNT: {} connections ({}% of max)",
           connections, (connections * 100) / MAX_ACTIVE_CONNECTIONS);
     }
-    
+
     if (avgLat > HIGH_LATENCY_THRESHOLD) {
-      log.error("HIGH LATENCY: Average latency {}ms exceeds threshold {}ms", 
-          avgLat, HIGH_LATENCY_THRESHOLD);
+      log.error(
+          "HIGH LATENCY: Average latency {}ms exceeds threshold {}ms",
+          avgLat,
+          HIGH_LATENCY_THRESHOLD);
     }
-    
+
     if (errors > HIGH_ERROR_THRESHOLD) {
       log.error("HIGH ERROR RATE: {} connection errors in last period", errors);
     }
-    
+
     if (authFailures > HIGH_ERROR_THRESHOLD / 2) {
       log.error("HIGH AUTH FAILURES: {} auth failures in last period", authFailures);
     }
-    
+
     // Reset error counters after alerting
     if (errors > 0) {
       connectionErrors.set(0);
@@ -165,11 +168,14 @@ public class WebSocketPerformanceMonitor {
       long minLat = minLatency.get();
 
       // Only log if there are issues or high activity
-      if (connections > HIGH_CONNECTION_THRESHOLD || avgLat > HIGH_LATENCY_THRESHOLD || connectionErrors.get() > HIGH_ERROR_THRESHOLD) {
+      if (connections > HIGH_CONNECTION_THRESHOLD
+          || avgLat > HIGH_LATENCY_THRESHOLD
+          || connectionErrors.get() > HIGH_ERROR_THRESHOLD) {
         log.warn(
-            "WebSocket Performance Issues - "
-                + "Connections: {}, Avg Latency: {}ms, Errors: {}",
-            connections, avgLat, connectionErrors.get());
+            "WebSocket Performance Issues - " + "Connections: {}, Avg Latency: {}ms, Errors: {}",
+            connections,
+            avgLat,
+            connectionErrors.get());
       }
     }
   }
