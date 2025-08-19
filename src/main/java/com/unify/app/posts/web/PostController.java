@@ -122,10 +122,12 @@ class PostController {
   }
 
   @GetMapping("/explorer")
-  public ResponseEntity<List<PostDto>> getRecommendedPostsForExplore() {
+  public ResponseEntity<PostFeedResponse> getRecommendedPostsForExplore(
+      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "12") int size) {
     String userId = securityService.getCurrentUserId();
-    List<PostDto> posts = postService.getRecommendedPostsForExplore(userId);
-    return ResponseEntity.ok(posts);
+    Pageable pageable = PageRequest.of(page, size, Sort.by("postedAt").descending());
+    PostFeedResponse response = postService.getRecommendedPostsForExplore(userId, pageable);
+    return ResponseEntity.ok(response);
   }
 
   // @GetMapping("/filter")
