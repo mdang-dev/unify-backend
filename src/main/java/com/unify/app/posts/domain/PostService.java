@@ -10,10 +10,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -196,7 +198,7 @@ public class PostService {
 
   /**
    * Creates a balanced feed by interleaving posts from different sources with infinite scroll
-   * support
+   * support and deduplication
    */
   private List<PostDto> createBalancedFeed(
       List<PersonalizedPostDto> ownPosts,
@@ -238,7 +240,9 @@ public class PostService {
     List<PostDto> interleavedPosts = new ArrayList<>();
 
     // Fill the page with posts, cycling through the pool if needed
-    for (int i = 0; i < pageSize; i++) {
+    // We'll fetch more than pageSize to account for deduplication
+    int maxAttempts = Math.min(pageSize * 3, allPostsPool.size());
+    for (int i = 0; i < maxAttempts; i++) {
       int postIndex = (startIndex + i) % allPostsPool.size();
       PersonalizedPostDto post = allPostsPool.get(postIndex);
       interleavedPosts.add(convertToPostDto(post));
@@ -247,7 +251,23 @@ public class PostService {
     // Apply additional randomization to the final order with a different seed
     Collections.shuffle(interleavedPosts, new Random(randomSeed + timeSeed));
 
-    return interleavedPosts;
+    // Deduplicate by postId and trim to pageSize
+    Set<String> seenPostIds = new HashSet<>();
+    List<PostDto> uniquePosts = new ArrayList<>();
+    for (PostDto post : interleavedPosts) {
+      if (post.getId() == null) {
+        continue;
+      }
+      if (!seenPostIds.contains(post.getId())) {
+        seenPostIds.add(post.getId());
+        uniquePosts.add(post);
+        if (uniquePosts.size() >= pageSize) {
+          break;
+        }
+      }
+    }
+
+    return uniquePosts;
   }
 
   /**
