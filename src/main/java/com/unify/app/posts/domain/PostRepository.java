@@ -156,6 +156,63 @@ interface PostRepository extends JpaRepository<Post, String> {
   Page<PersonalizedPostDto> findPersonalizedPostsSimple(
       @Param("userId") String userId, Pageable pageable);
 
+  // New methods for improved newsfeed algorithm
+  @Query(
+      """
+                SELECT new com.unify.app.posts.domain.models.PersonalizedPostDto(
+                    p,
+                    COUNT(DISTINCT lp.id) + COUNT(DISTINCT pc.id),
+                    COUNT(DISTINCT pc.id)
+                )
+                FROM Post p
+                LEFT JOIN p.likedPosts lp
+                LEFT JOIN p.comments pc
+                WHERE p.status = 1
+                  AND p.user.id = :userId
+                GROUP BY p
+                ORDER BY p.postedAt DESC
+            """)
+  List<PersonalizedPostDto> findUserOwnPosts(@Param("userId") String userId);
+
+  @Query(
+      """
+                SELECT new com.unify.app.posts.domain.models.PersonalizedPostDto(
+                    p,
+                    COUNT(DISTINCT lp.id) + COUNT(DISTINCT pc.id),
+                    COUNT(DISTINCT pc.id)
+                )
+                FROM Post p
+                LEFT JOIN p.likedPosts lp
+                LEFT JOIN p.comments pc
+                WHERE p.status = 1
+                  AND p.user.id IN (
+                      SELECT f.userFollowing.id FROM Follower f WHERE f.userFollower.id = :userId
+                  )
+                GROUP BY p
+                ORDER BY p.postedAt DESC
+            """)
+  List<PersonalizedPostDto> findFollowedUsersPosts(@Param("userId") String userId);
+
+  @Query(
+      """
+                SELECT new com.unify.app.posts.domain.models.PersonalizedPostDto(
+                    p,
+                    COUNT(DISTINCT lp.id) + COUNT(DISTINCT pc.id),
+                    COUNT(DISTINCT pc.id)
+                )
+                FROM Post p
+                LEFT JOIN p.likedPosts lp
+                LEFT JOIN p.comments pc
+                WHERE p.status = 1
+                  AND p.user.id NOT IN (
+                      SELECT f.userFollowing.id FROM Follower f WHERE f.userFollower.id = :userId
+                  )
+                  AND p.user.id != :userId
+                GROUP BY p
+                ORDER BY COUNT(DISTINCT lp.id) + COUNT(DISTINCT pc.id) DESC, p.postedAt DESC
+            """)
+  List<PersonalizedPostDto> findRecommendedPosts(@Param("userId") String userId);
+
   @Query(
       """
     SELECT p, COUNT(pc)

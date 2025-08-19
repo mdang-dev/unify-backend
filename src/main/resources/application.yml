@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: unify-backend
+  devtools:
+    restart:
+      enabled: false
 
   jackson:
     time-zone: Asia/Ho_Chi_Minh
