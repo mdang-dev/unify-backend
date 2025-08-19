@@ -1,6 +1,7 @@
 package com.unify.app.users.web;
 
 import com.unify.app.users.domain.UserService;
+import com.unify.app.users.domain.models.EditProfileDto;
 import com.unify.app.users.domain.models.ShareAbleUserDto;
 import com.unify.app.users.domain.models.UserDto;
 import com.unify.app.users.domain.models.UserPagedResponse;
@@ -147,8 +148,8 @@ class UserController {
   }
 
   @PutMapping
-  ResponseEntity<?> updateUser(@RequestBody UserDto userDto) {
-    UserDto updatedUser = userService.updateUser(userDto);
+  ResponseEntity<?> updateUser(@RequestBody EditProfileDto editProfileDto) {
+    UserDto updatedUser = userService.updateUser(editProfileDto);
     return ResponseEntity.ok(updatedUser);
   }
 

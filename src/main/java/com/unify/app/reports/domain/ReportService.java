@@ -61,6 +61,113 @@ public class ReportService {
         .orElseThrow(() -> new ReportException("Report not found with id + " + id));
   }
 
+  /** Returns detailed report with reporters as List<UserDto>. */
+  public com.unify.app.reports.domain.models.ReportWithReportersDto findDetailedById(String id) {
+    Report report =
+        reportRepository
+            .findById(id)
+            .orElseThrow(() -> new ReportException("Report not found with id + " + id));
+
+    ReportDto base = reportMapper.toReportDTO(report);
+    var extended = new com.unify.app.reports.domain.models.ReportWithReportersDto();
+    extended.setId(base.getId());
+    extended.setReportedId(base.getReportedId());
+    extended.setReportedAt(base.getReportedAt());
+    extended.setEntityType(base.getEntityType());
+    extended.setStatus(base.getStatus());
+    extended.setReason(base.getReason());
+    extended.setAdminReason(base.getAdminReason());
+    extended.setReportedEntity(base.getReportedEntity());
+    extended.setImages(base.getImages());
+
+    // Load reporter user IDs by reported target (no brittle column positions)
+    List<String> reporterIds =
+        reportRepository.findReporterUserIdsForTarget(
+            report.getReportedId(), report.getEntityType().name());
+    var reporterDtos =
+        reporterIds.stream()
+            .map(userService::findUserById)
+            .map(userMapper::toUserDTO)
+            .collect(java.util.stream.Collectors.toList());
+    extended.setReporters(reporterDtos);
+
+    return extended;
+  }
+
+  /**
+   * Fetch all reports for a given reportedId and return enriched results (same shape as detailed
+   * response, per report).
+   */
+  public List<com.unify.app.reports.domain.models.ReportWithReportersDto> findDetailedByReportedId(
+      String reportedId) {
+    List<Report> reports = reportRepository.findByReportedId(reportedId);
+    if (reports == null || reports.isEmpty()) {
+      throw new ReportException("No reports found for reportedId: " + reportedId);
+    }
+
+    // Determine target type from first report
+    String entityType = reports.get(0).getEntityType().name();
+
+    // Load reporter user IDs for this target and map to UserDto
+    List<String> reporterIds =
+        reportRepository.findReporterUserIdsForTarget(reportedId, entityType);
+    var reporterDtos =
+        reporterIds.stream()
+            .map(userService::findUserById)
+            .map(userMapper::toUserDTO)
+            .collect(Collectors.toList());
+
+    // Build enriched DTOs for each report
+    return reports.stream()
+        .map(
+            report -> {
+              ReportDto base = reportMapper.toReportDTO(report);
+              var dto = new com.unify.app.reports.domain.models.ReportWithReportersDto();
+              dto.setId(base.getId());
+              dto.setReportedId(base.getReportedId());
+              dto.setReportedAt(base.getReportedAt());
+              dto.setEntityType(base.getEntityType());
+              dto.setStatus(base.getStatus());
+              dto.setReason(base.getReason());
+              dto.setAdminReason(base.getAdminReason());
+              dto.setReportedEntity(
+                  getReportedEntity(report.getReportedId(), report.getEntityType()));
+              dto.setImages(base.getImages());
+              dto.setReporters(reporterDtos);
+              return dto;
+            })
+        .collect(Collectors.toList());
+  }
+
+  // Safely convert JDBC array or collection to List<String>
+  private List<String> extractStringList(Object value) {
+    try {
+      if (value == null) return List.of();
+      if (value instanceof java.sql.Array sqlArray) {
+        Object arr = sqlArray.getArray();
+        if (arr instanceof String[] sarr) return java.util.Arrays.asList(sarr);
+        Object[] anyArr = (Object[]) arr;
+        List<String> out = new java.util.ArrayList<>(anyArr.length);
+        for (Object o : anyArr) if (o != null) out.add(o.toString());
+        return out;
+      }
+      if (value instanceof List<?> list) {
+        List<String> out = new java.util.ArrayList<>(list.size());
+        for (Object o : list) if (o != null) out.add(o.toString());
+        return out;
+      }
+      if (value.getClass().isArray()) {
+        Object[] anyArr = (Object[]) value;
+        List<String> out = new java.util.ArrayList<>(anyArr.length);
+        for (Object o : anyArr) if (o != null) out.add(o.toString());
+        return out;
+      }
+      return List.of(value.toString());
+    } catch (Exception e) {
+      return List.of();
+    }
+  }
+
   /** Creates a report for a post. */
   public ReportDto createPostReport(String reportedId, String reason, List<String> urls) {
     return createReport(reportedId, reason, EntityType.POST, urls);
@@ -251,6 +358,9 @@ public class ReportService {
 
     if (status == APPROVED) {
       handleApprovalAction(report);
+    } else if (status == REJECTED) {
+      ReportDto reportDto = reportMapper.toReportDTO(report);
+      handleRejectionAction(reportDto);
     }
 
     return reportMapper.toReportDTO(reportRepository.save(report));
@@ -295,6 +405,19 @@ public class ReportService {
         .forEach(
             r -> {
               r.setStatus(APPROVED);
+              reportRepository.save(r);
+            });
+  }
+
+  private void handleRejectionAction(ReportDto reportDto) {
+    // Update all reports for the same target to REJECTED status for consistency
+    reportRepository
+        .findByReportedIdAndEntityType(reportDto.getReportedId(), reportDto.getEntityType())
+        .forEach(
+            r -> {
+              r.setStatus(REJECTED);
+              r.setAdminReason(
+                  reportDto.getAdminReason()); // Use the same admin reason for consistency
               reportRepository.save(r);
             });
   }

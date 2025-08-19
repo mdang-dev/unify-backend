@@ -33,7 +33,7 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-class Report implements Serializable {
+public class Report implements Serializable {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)

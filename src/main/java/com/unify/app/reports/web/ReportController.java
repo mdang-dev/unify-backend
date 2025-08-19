@@ -2,10 +2,7 @@ package com.unify.app.reports.web;
 
 import com.unify.app.common.models.PagedResponse;
 import com.unify.app.reports.domain.ReportService;
-import com.unify.app.reports.domain.models.AdminReportActionDto;
-import com.unify.app.reports.domain.models.EntityType;
-import com.unify.app.reports.domain.models.ReportDto;
-import com.unify.app.reports.domain.models.ReportSummaryDto;
+import com.unify.app.reports.domain.models.*;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -85,8 +82,14 @@ public class ReportController {
   }
 
   @GetMapping("/{id}")
-  public ReportDto getReport(@PathVariable String id) {
-    return reportService.findById(id);
+  public ReportWithReportersDto getReport(@PathVariable String id) {
+    return reportService.findDetailedById(id);
+  }
+
+  // Fetch all reports by reportedId (enriched with reporters)
+  @GetMapping("/target/{reportedId}")
+  public List<ReportWithReportersDto> getReportsByTarget(@PathVariable String reportedId) {
+    return reportService.findDetailedByReportedId(reportedId);
   }
 
   @PostMapping("/post")
