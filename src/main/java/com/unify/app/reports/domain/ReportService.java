@@ -361,8 +361,6 @@ public class ReportService {
     } else if (status == REJECTED) {
       ReportDto reportDto = reportMapper.toReportDTO(report);
       handleRejectionAction(reportDto);
-      // Since we're deleting the report, return null or throw an exception
-      throw new ReportException("Report has been rejected and removed.");
     }
 
     return reportMapper.toReportDTO(reportRepository.save(report));
@@ -412,11 +410,16 @@ public class ReportService {
   }
 
   private void handleRejectionAction(ReportDto reportDto) {
-
-    // Remove all reports for the same target when rejected
+    // Update all reports for the same target to REJECTED status for consistency
     reportRepository
         .findByReportedIdAndEntityType(reportDto.getReportedId(), reportDto.getEntityType())
-        .forEach(reportRepository::delete);
+        .forEach(
+            r -> {
+              r.setStatus(REJECTED);
+              r.setAdminReason(
+                  reportDto.getAdminReason()); // Use the same admin reason for consistency
+              reportRepository.save(r);
+            });
   }
 
   /** Admin-only delete for a report. */
