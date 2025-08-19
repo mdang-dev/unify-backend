@@ -143,18 +143,31 @@ public class PostService {
     return posts.stream().map(mapper::toPostDto).collect(Collectors.toList());
   }
 
-  public List<PostDto> getRecommendedPostsForExplore(String userId) {
-    List<Object[]> results = postRepository.findPostsWithInteractionCountsAndNotFollow(userId);
-    return results.stream()
-        .map(
-            result -> {
-              Post post = (Post) result[0];
-              Long commentCount = (Long) result[1];
-              PostDto postDto = mapper.toPostDto(post);
-              postDto.setCommentCount(commentCount);
-              return postDto;
-            })
-        .collect(Collectors.toList());
+  public PostFeedResponse getRecommendedPostsForExplore(String userId, Pageable pageable) {
+    int pageSize = pageable.getPageSize();
+    int pageNumber = pageable.getPageNumber();
+
+    // Fetch posts with pagination support
+    Page<Object[]> results =
+        postRepository.findPostsWithInteractionCountsAndNotFollow(userId, pageable);
+
+    // Convert to PostDto with comment count
+    List<PostDto> posts =
+        results.getContent().stream()
+            .map(
+                result -> {
+                  Post post = (Post) result[0];
+                  Long commentCount = (Long) result[1];
+                  PostDto postDto = mapper.toPostDto(post);
+                  postDto.setCommentCount(commentCount);
+                  return postDto;
+                })
+            .collect(Collectors.toList());
+
+    // Check if there are more posts available
+    boolean hasNext = results.hasNext();
+
+    return new PostFeedResponse(posts, hasNext, pageNumber);
   }
 
   public List<PostDto> getPostsWithCommentCount() {

@@ -39,9 +39,10 @@ interface PostRepository extends JpaRepository<Post, String> {
                 AND p.user.id != :userId
                 AND p.status != 2
                 GROUP BY p
-                ORDER BY interactionCount DESC
+                ORDER BY interactionCount DESC, p.postedAt DESC
             """)
-  List<Object[]> findPostsWithInteractionCountsAndNotFollow(@Param("userId") String userId);
+  Page<Object[]> findPostsWithInteractionCountsAndNotFollow(
+      @Param("userId") String userId, Pageable pageable);
 
   @Query("FROM Post o WHERE o.postedAt BETWEEN :start AND :end")
   List<Post> getPostsByDate(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
