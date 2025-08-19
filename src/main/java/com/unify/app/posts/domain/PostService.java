@@ -9,6 +9,7 @@ import com.unify.app.posts.domain.models.PostTableResponse;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -193,7 +194,10 @@ public class PostService {
     return new PostFeedResponse(interleavedPosts, hasNext, pageNumber);
   }
 
-  /** Creates a balanced feed by interleaving posts from different sources */
+  /**
+   * Creates a balanced feed by interleaving posts from different sources with infinite scroll
+   * support
+   */
   private List<PostDto> createBalancedFeed(
       List<PersonalizedPostDto> ownPosts,
       List<PersonalizedPostDto> followedPosts,
@@ -202,107 +206,63 @@ public class PostService {
       int pageNumber,
       String userId) {
 
-    // Calculate how many posts to include from each source
-    int totalOwnPosts = Math.min(3, ownPosts.size()); // Max 3 own posts
-    int followedPostsTarget =
-        Math.min(pageSize * 2 / 3, followedPosts.size()); // ~67% from followed users
-    int recommendedPostsTarget =
-        Math.min(pageSize / 3, recommendedPosts.size()); // ~33% from recommendations
+    // Create a more random seed that changes more frequently
+    long baseSeed = ((long) (userId == null ? 0 : userId.hashCode())) ^ pageNumber;
+    long timeSeed = System.currentTimeMillis() / 60000; // Changes every minute
+    long randomSeed = baseSeed ^ timeSeed ^ (pageNumber * 31);
+    Random random = new Random(randomSeed);
 
-    // Apply pagination offset with proper bounds checking
-    int offset = pageNumber * pageSize;
-    int ownPostsOffset = Math.min(offset / 10, ownPosts.size()); // Own posts appear less frequently
-    int followedPostsOffset = Math.min(offset, followedPosts.size());
-    int recommendedPostsOffset = Math.min(offset, recommendedPosts.size());
+    // Combine all posts into a single pool for infinite scroll
+    List<PersonalizedPostDto> allPostsPool = new ArrayList<>();
 
-    // Get posts for current page with proper bounds checking
-    List<PersonalizedPostDto> ownPostsForPage = new ArrayList<>();
-    if (ownPostsOffset < ownPosts.size()) {
-      int ownEndIndex = Math.min(ownPostsOffset + totalOwnPosts, ownPosts.size());
-      if (ownEndIndex > ownPostsOffset) {
-        ownPostsForPage = ownPosts.subList(ownPostsOffset, ownEndIndex);
-      }
+    // Add posts with different weights for variety
+    addPostsToPool(allPostsPool, ownPosts, 1, random); // Own posts get weight 1
+    addPostsToPool(allPostsPool, followedPosts, 3, random); // Followed posts get weight 3
+    addPostsToPool(allPostsPool, recommendedPosts, 2, random); // Recommended posts get weight 2
+
+    // If no posts available, return empty list
+    if (allPostsPool.isEmpty()) {
+      return new ArrayList<>();
     }
 
-    List<PersonalizedPostDto> followedPostsForPage = new ArrayList<>();
-    if (followedPostsOffset < followedPosts.size()) {
-      int followedEndIndex =
-          Math.min(followedPostsOffset + followedPostsTarget, followedPosts.size());
-      if (followedEndIndex > followedPostsOffset) {
-        followedPostsForPage = followedPosts.subList(followedPostsOffset, followedEndIndex);
-      }
-    }
+    // Shuffle the entire pool for maximum randomness
+    Collections.shuffle(allPostsPool, random);
 
-    List<PersonalizedPostDto> recommendedPostsForPage = new ArrayList<>();
-    if (recommendedPostsOffset < recommendedPosts.size()) {
-      int recommendedEndIndex =
-          Math.min(recommendedPostsOffset + recommendedPostsTarget, recommendedPosts.size());
-      if (recommendedEndIndex > recommendedPostsOffset) {
-        recommendedPostsForPage =
-            recommendedPosts.subList(recommendedPostsOffset, recommendedEndIndex);
-      }
-    }
-
-    // Interleave posts using a weighted approach
+    // For infinite scroll, we'll cycle through posts with different starting positions
+    int startIndex = (pageNumber * pageSize) % allPostsPool.size();
     List<PostDto> interleavedPosts = new ArrayList<>();
-    int ownIndex = 0, followedIndex = 0, recommendedIndex = 0;
 
-    // Create a semi-randomized order using a seed based on userId and page number
-    long seed = ((long) (userId == null ? 0 : userId.hashCode())) ^ pageNumber;
-    Random random = new Random(seed);
-
-    while (interleavedPosts.size() < pageSize
-        && (ownIndex < ownPostsForPage.size()
-            || followedIndex < followedPostsForPage.size()
-            || recommendedIndex < recommendedPostsForPage.size())) {
-
-      // Determine which source to pick from next using weighted randomization
-      double rand = random.nextDouble();
-
-      if (rand < 0.1 && ownIndex < ownPostsForPage.size()) {
-        // 10% chance for own posts (when available)
-        interleavedPosts.add(convertToPostDto(ownPostsForPage.get(ownIndex++)));
-      } else if (rand < 0.7 && followedIndex < followedPostsForPage.size()) {
-        // 60% chance for followed users' posts (when available)
-        interleavedPosts.add(convertToPostDto(followedPostsForPage.get(followedIndex++)));
-      } else if (recommendedIndex < recommendedPostsForPage.size()) {
-        // 30% chance for recommended posts (when available)
-        interleavedPosts.add(convertToPostDto(recommendedPostsForPage.get(recommendedIndex++)));
-      } else if (followedIndex < followedPostsForPage.size()) {
-        // Fallback to followed posts if recommended posts are exhausted
-        interleavedPosts.add(convertToPostDto(followedPostsForPage.get(followedIndex++)));
-      } else if (ownIndex < ownPostsForPage.size()) {
-        // Fallback to own posts if others are exhausted
-        interleavedPosts.add(convertToPostDto(ownPostsForPage.get(ownIndex++)));
-      }
+    // Fill the page with posts, cycling through the pool if needed
+    for (int i = 0; i < pageSize; i++) {
+      int postIndex = (startIndex + i) % allPostsPool.size();
+      PersonalizedPostDto post = allPostsPool.get(postIndex);
+      interleavedPosts.add(convertToPostDto(post));
     }
 
-    // If we still don't have enough posts, fill with more posts from any available source
-    if (interleavedPosts.size() < pageSize) {
-      List<PersonalizedPostDto> remainingPosts = new ArrayList<>();
-      remainingPosts.addAll(ownPosts.subList(ownPostsOffset + ownIndex, ownPosts.size()));
-      remainingPosts.addAll(
-          followedPosts.subList(followedPostsOffset + followedIndex, followedPosts.size()));
-      remainingPosts.addAll(
-          recommendedPosts.subList(
-              recommendedPostsOffset + recommendedIndex, recommendedPosts.size()));
-
-      // Sort remaining posts by recency and engagement
-      remainingPosts.sort(
-          (a, b) -> {
-            int engagementCompare = Long.compare(b.interactionCount(), a.interactionCount());
-            if (engagementCompare != 0) return engagementCompare;
-            return b.post().getPostedAt().compareTo(a.post().getPostedAt());
-          });
-
-      // Add remaining posts until we reach pageSize
-      for (PersonalizedPostDto post : remainingPosts) {
-        if (interleavedPosts.size() >= pageSize) break;
-        interleavedPosts.add(convertToPostDto(post));
-      }
-    }
+    // Apply additional randomization to the final order
+    Collections.shuffle(interleavedPosts, new Random(randomSeed + 1));
 
     return interleavedPosts;
+  }
+
+  /**
+   * Adds posts to the pool with specified weight (number of times to add each post) This creates
+   * more variety and ensures certain posts appear more frequently
+   */
+  private void addPostsToPool(
+      List<PersonalizedPostDto> pool, List<PersonalizedPostDto> posts, int weight, Random random) {
+    if (posts.isEmpty()) return;
+
+    // Create a shuffled copy of posts to avoid clustering
+    List<PersonalizedPostDto> shuffledPosts = new ArrayList<>(posts);
+    Collections.shuffle(shuffledPosts, random);
+
+    // Add each post multiple times based on weight
+    for (PersonalizedPostDto post : shuffledPosts) {
+      for (int i = 0; i < weight; i++) {
+        pool.add(post);
+      }
+    }
   }
 
   /** Converts PersonalizedPostDto to PostDto */
@@ -312,7 +272,9 @@ public class PostService {
     return postDTO;
   }
 
-  /** Determines if there are more posts available for pagination */
+  /**
+   * Determines if there are more posts available for pagination - always true for infinite scroll
+   */
   private boolean hasMorePostsAvailable(
       List<PersonalizedPostDto> ownPosts,
       List<PersonalizedPostDto> followedPosts,
@@ -320,16 +282,9 @@ public class PostService {
       int pageSize,
       int pageNumber) {
 
-    int offset = pageNumber * pageSize;
-    int ownPostsOffset = Math.min(offset / 10, ownPosts.size());
-    int followedPostsOffset = Math.min(offset, followedPosts.size());
-    int recommendedPostsOffset = Math.min(offset, recommendedPosts.size());
-
-    int remainingOwnPosts = Math.max(0, ownPosts.size() - ownPostsOffset);
-    int remainingFollowedPosts = Math.max(0, followedPosts.size() - followedPostsOffset);
-    int remainingRecommendedPosts = Math.max(0, recommendedPosts.size() - recommendedPostsOffset);
-
-    return (remainingOwnPosts + remainingFollowedPosts + remainingRecommendedPosts) > pageSize;
+    // For infinite scroll, we always return true as long as there are any posts available
+    // The algorithm will cycle through posts infinitely
+    return !ownPosts.isEmpty() || !followedPosts.isEmpty() || !recommendedPosts.isEmpty();
   }
 
   public Page<PostDto> getReelsPosts(int page, int size) {
