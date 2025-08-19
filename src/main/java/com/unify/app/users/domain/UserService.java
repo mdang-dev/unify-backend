@@ -1,6 +1,7 @@
 package com.unify.app.users.domain;
 
 import com.unify.app.users.domain.models.AvatarDto;
+import com.unify.app.users.domain.models.EditProfileDto;
 import com.unify.app.users.domain.models.ShareAbleUserDto;
 import com.unify.app.users.domain.models.UserDto;
 import com.unify.app.users.domain.models.UserReportCountDto;
@@ -237,6 +238,52 @@ public class UserService {
 
     User updatedUser = userRepository.save(existingUser);
 
+    return userMapper.toUserDTO(updatedUser);
+  }
+
+  @PreAuthorize("hasRole('USER')")
+  @CacheEvict(value = "user", key = "#result.id")
+  public UserDto updateUser(EditProfileDto editProfileDto) {
+    // Get current authenticated user
+    String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+    User existingUser =
+        userRepository
+            .findByEmail(currentUserEmail)
+            .orElseThrow(() -> new UserNotFoundException("User not found!"));
+
+    // Update only the fields that are provided in the DTO
+    if (editProfileDto.firstName() != null) {
+      existingUser.setFirstName(editProfileDto.firstName());
+    }
+    if (editProfileDto.lastName() != null) {
+      existingUser.setLastName(editProfileDto.lastName());
+    }
+    if (editProfileDto.phone() != null) {
+      existingUser.setPhone(editProfileDto.phone());
+    }
+    if (editProfileDto.email() != null) {
+      existingUser.setEmail(editProfileDto.email());
+    }
+    if (editProfileDto.gender() != null) {
+      existingUser.setGender(editProfileDto.gender());
+    }
+    if (editProfileDto.birthDay() != null) {
+      existingUser.setBirthDay(editProfileDto.birthDay());
+    }
+    if (editProfileDto.location() != null) {
+      existingUser.setLocation(editProfileDto.location());
+    }
+    if (editProfileDto.education() != null) {
+      existingUser.setEducation(editProfileDto.education());
+    }
+    if (editProfileDto.workAt() != null) {
+      existingUser.setWorkAt(editProfileDto.workAt());
+    }
+    if (editProfileDto.biography() != null) {
+      existingUser.setBiography(editProfileDto.biography());
+    }
+
+    User updatedUser = userRepository.save(existingUser);
     return userMapper.toUserDTO(updatedUser);
   }
 
