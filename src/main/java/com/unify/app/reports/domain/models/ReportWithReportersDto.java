@@ -1,5 +1,6 @@
 package com.unify.app.reports.domain.models;
 
+import com.unify.app.users.domain.models.UserDto;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Getter;
@@ -7,7 +8,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ReportDto {
+public class ReportWithReportersDto {
   String id;
   String reportedId;
   LocalDateTime reportedAt;
@@ -17,5 +18,5 @@ public class ReportDto {
   String adminReason;
   Object reportedEntity;
   private List<ReportImageDto> images;
-  // Moved to separate DTO with reporters as List<UserDto>
+  private List<UserDto> reporters;
 }

@@ -11,13 +11,50 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-interface ReportRepository extends JpaRepository<Report, String> {
+public interface ReportRepository extends JpaRepository<Report, String> {
 
   List<Report> findByStatusIn(List<Integer> statuses);
 
   List<Report> findByReportedId(String reportedId);
 
   Optional<Report> findById(String id);
+
+  // Fetch a report by id and include the list of reporters (user usernames) who submitted
+  @Query(
+      value =
+          """
+          SELECT r.id,
+                 r.reported_id,
+                 r.reported_at,
+                 r.entity_type,
+                 r.status,
+                 r.reason,
+                 r.admin_reason,
+                 r.user_id,
+                 (
+                   SELECT ARRAY_REMOVE(ARRAY_AGG(DISTINCT u2.id), NULL)
+                   FROM reports r2
+                   LEFT JOIN users u2 ON u2.id = r2.user_id
+                   WHERE r2.reported_id = r.reported_id AND r2.entity_type = r.entity_type
+                 ) AS reporters
+          FROM reports r
+          WHERE r.id = :reportId
+          """,
+      nativeQuery = true)
+  Object[] findReportWithReportersById(@Param("reportId") String reportId);
+
+  // Fetch distinct reporter user IDs for a given target (reportedId + entityType)
+  @Query(
+      value =
+          """
+          SELECT DISTINCT u.id
+          FROM reports r
+          JOIN users u ON u.id = r.user_id
+          WHERE r.reported_id = :reportedId AND r.entity_type = :entityType
+          """,
+      nativeQuery = true)
+  List<String> findReporterUserIdsForTarget(
+      @Param("reportedId") String reportedId, @Param("entityType") String entityType);
 
   List<Report> findByEntityType(EntityType entityType);
 
