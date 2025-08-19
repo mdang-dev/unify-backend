@@ -206,10 +206,11 @@ public class PostService {
       int pageNumber,
       String userId) {
 
-    // Create a more random seed that changes more frequently
+    // Create a highly dynamic random seed that changes on every request
     long baseSeed = ((long) (userId == null ? 0 : userId.hashCode())) ^ pageNumber;
-    long timeSeed = System.currentTimeMillis() / 60000; // Changes every minute
-    long randomSeed = baseSeed ^ timeSeed ^ (pageNumber * 31);
+    long timeSeed = System.currentTimeMillis(); // Use full millisecond precision
+    long nanoSeed = System.nanoTime(); // Add nanosecond precision for even more randomness
+    long randomSeed = baseSeed ^ timeSeed ^ nanoSeed ^ (pageNumber * 31);
     Random random = new Random(randomSeed);
 
     // Combine all posts into a single pool for infinite scroll
@@ -229,7 +230,11 @@ public class PostService {
     Collections.shuffle(allPostsPool, random);
 
     // For infinite scroll, we'll cycle through posts with different starting positions
-    int startIndex = (pageNumber * pageSize) % allPostsPool.size();
+    // Add extra randomization to starting position to prevent same posts on reload
+    int baseStartIndex = (pageNumber * pageSize) % allPostsPool.size();
+    int randomOffset = random.nextInt(allPostsPool.size()); // Random offset within pool size
+    int startIndex = (baseStartIndex + randomOffset) % allPostsPool.size();
+
     List<PostDto> interleavedPosts = new ArrayList<>();
 
     // Fill the page with posts, cycling through the pool if needed
@@ -239,8 +244,8 @@ public class PostService {
       interleavedPosts.add(convertToPostDto(post));
     }
 
-    // Apply additional randomization to the final order
-    Collections.shuffle(interleavedPosts, new Random(randomSeed + 1));
+    // Apply additional randomization to the final order with a different seed
+    Collections.shuffle(interleavedPosts, new Random(randomSeed + timeSeed));
 
     return interleavedPosts;
   }
