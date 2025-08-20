@@ -1,5 +1,6 @@
 package com.unify.app.notifications.domain.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import lombok.Builder;
@@ -17,7 +18,11 @@ public class NotificationDto implements Serializable {
   NotificationType type;
   String message;
   LocalDateTime timestamp;
-  @Default boolean isRead = false;
+
+  @JsonProperty("isRead") // ✅ FIX: Ensure isRead field is properly serialized
+  @Default
+  boolean isRead = false;
+
   String link;
   String data; // ✅ ADDED: Store JSON data like commentId, postId
 
