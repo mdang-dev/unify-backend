@@ -36,6 +36,13 @@ public class NotificationService {
 
   public void sendNotification(String receiverId, NotificationDto notificationDTO) {
     try {
+      // ✅ DEBUG: Log the notification being sent to identify the issue
+      log.debug(
+          "Sending notification via WebSocket: id={}, isRead={}, type={}",
+          notificationDTO.getId(),
+          notificationDTO.isRead(),
+          notificationDTO.getType());
+
       simpMessagingTemplate.convertAndSend(
           "/user/" + receiverId + "/queue/notifications", notificationDTO);
 
