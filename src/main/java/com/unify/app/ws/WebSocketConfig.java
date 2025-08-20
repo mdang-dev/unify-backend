@@ -1,17 +1,21 @@
 package com.unify.app.ws;
 
-import java.util.concurrent.ThreadPoolExecutor;
-import lombok.NonNull;
+import com.unify.app.security.JwtService;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.simp.config.ChannelRegistration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
+import org.springframework.web.socket.server.HandshakeInterceptor;
 
 @Slf4j
 @Configuration
@@ -19,75 +23,66 @@ import org.springframework.web.socket.config.annotation.WebSocketTransportRegist
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-  private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+  private final JwtService jwtService;
 
   @Override
-  public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
+  public void registerStompEndpoints(StompEndpointRegistry registry) {
     registry
         .addEndpoint("/ws")
-        .setAllowedOriginPatterns(
-            "http://localhost:3000",
-            "http://localhost:3001",
-            "https://unify.qzz.io",
-            "https://*.unify.qzz.io",
-            "https://unify.id.vn",
-            "https://*.unify.id.vn")
-        .withSockJS()
-        .setHeartbeatTime(15000)
-        .setDisconnectDelay(10000)
-        .setHttpMessageCacheSize(500)
-        .setWebSocketEnabled(true)
-        .setSessionCookieNeeded(false);
+        .setAllowedOriginPatterns("*")
+        .addInterceptors(new AuthHandshakeInterceptor())
+        .withSockJS();
   }
 
   @Override
-  public void configureMessageBroker(@NonNull MessageBrokerRegistry registry) {
+  public void configureMessageBroker(MessageBrokerRegistry registry) {
     registry.enableSimpleBroker("/topic", "/queue", "/user");
     registry.setApplicationDestinationPrefixes("/app");
     registry.setUserDestinationPrefix("/user");
-    registry.setPreservePublishOrder(true);
   }
 
-  @Override
-  public void configureClientInboundChannel(ChannelRegistration registration) {
-    ThreadPoolTaskExecutor inboundExecutor = new ThreadPoolTaskExecutor();
-    inboundExecutor.setCorePoolSize(8);
-    inboundExecutor.setMaxPoolSize(16);
-    inboundExecutor.setQueueCapacity(200);
-    inboundExecutor.setThreadNamePrefix("ws-inbound-");
-    inboundExecutor.setKeepAliveSeconds(45);
-    inboundExecutor.setAllowCoreThreadTimeOut(true);
-    inboundExecutor.setWaitForTasksToCompleteOnShutdown(true);
-    inboundExecutor.setAwaitTerminationSeconds(20);
-    inboundExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-    inboundExecutor.initialize();
+  private class AuthHandshakeInterceptor implements HandshakeInterceptor {
 
-    registration.interceptors(webSocketAuthInterceptor).taskExecutor(inboundExecutor);
-  }
+    @Override
+    public boolean beforeHandshake(
+        @NonNull ServerHttpRequest request,
+        @NonNull ServerHttpResponse response,
+        @NonNull WebSocketHandler wsHandler,
+        @NonNull Map<String, Object> attributes) {
 
-  @Override
-  public void configureClientOutboundChannel(ChannelRegistration registration) {
-    ThreadPoolTaskExecutor outboundExecutor = new ThreadPoolTaskExecutor();
-    outboundExecutor.setCorePoolSize(8);
-    outboundExecutor.setMaxPoolSize(16);
-    outboundExecutor.setQueueCapacity(200);
-    outboundExecutor.setThreadNamePrefix("ws-outbound-");
-    outboundExecutor.setKeepAliveSeconds(45);
-    outboundExecutor.setAllowCoreThreadTimeOut(true);
-    outboundExecutor.setWaitForTasksToCompleteOnShutdown(true);
-    outboundExecutor.setAwaitTerminationSeconds(20);
-    outboundExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-    outboundExecutor.initialize();
+      String token = extractToken(request);
+      if (token == null || !jwtService.validToken(token)) {
+        log.warn("WebSocket handshake rejected. Invalid or missing token.");
+        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        return false;
+      }
 
-    registration.taskExecutor(outboundExecutor);
-  }
+      return true;
+    }
 
-  @Override
-  public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
-    registration
-        .setMessageSizeLimit(128 * 1024)
-        .setSendBufferSizeLimit(2 * 1024 * 1024)
-        .setSendTimeLimit(5000)
-        .setTimeToFirstMessage(8000);
+    @Override
+    public void afterHandshake(
+        ServerHttpRequest request,
+        ServerHttpResponse response,
+        WebSocketHandler wsHandler,
+        Exception exception) {}
+
+    private String extractToken(ServerHttpRequest request) {
+      // Check header
+      List<String> authHeaders = request.getHeaders().get("Authorization");
+      if (authHeaders != null && !authHeaders.isEmpty()) {
+        return authHeaders.get(0).replace("Bearer ", "");
+      }
+
+      // Check query param
+      String query = request.getURI().getQuery();
+      if (query != null) {
+        for (String param : query.split("&")) {
+          if (param.startsWith("token=")) return param.split("=")[1];
+        }
+      }
+
+      return null;
+    }
   }
 }

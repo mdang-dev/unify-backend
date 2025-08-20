@@ -10,8 +10,8 @@ import com.unify.app.media.domain.models.CallResponse;
 import com.unify.app.media.domain.models.CallSession;
 import com.unify.app.media.domain.models.CallTokenResponse;
 import com.unify.app.media.domain.models.RejectCallDto;
+import com.unify.app.users.domain.User;
 import com.unify.app.users.domain.UserService;
-import com.unify.app.users.domain.models.UserDto;
 import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,8 +52,8 @@ class CallController {
     String callerToken = tokenGenerator.createToken(callerId, room);
     String calleeToken = tokenGenerator.createToken(calleeId, room);
 
-    UserDto caller = userService.findById(callerId);
-    UserDto callee = userService.findById(calleeId);
+    User caller = userService.findUserById(callerId);
+    User callee = userService.findUserById(calleeId);
 
     // Create caller session
     CallSession callerSession =
@@ -61,8 +61,8 @@ class CallController {
             .token(callerToken)
             .video(isVideo)
             .isCaller(true)
-            .calleeName(callee.firstName() + " " + callee.lastName())
-            .calleeAvatar(callee.avatar().url())
+            .calleeName(callee.getFirstName() + " " + callee.getLastName())
+            .calleeAvatar(callee.latestAvatar().getUrl())
             .room(room)
             .userId(callerId)
             .build();
@@ -82,7 +82,11 @@ class CallController {
 
     // Create call notification
     CallNotification notification =
-        new CallNotification(room, callerId, caller.firstName() + " " + caller.lastName());
+        new CallNotification(
+            room,
+            callerId,
+            caller.getFirstName() + " " + caller.getLastName(),
+            caller.latestAvatar().getUrl());
 
     messagingTemplate.convertAndSend("/topic/call/" + calleeId, notification);
 
