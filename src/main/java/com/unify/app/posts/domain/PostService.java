@@ -84,6 +84,18 @@ public class PostService {
     post.setIsCommentVisible(postDto.getIsCommentVisible());
     post.setIsLikeVisible(postDto.getIsLikeVisible());
 
+    // Handle media updates - only add newly uploaded media
+    if (postDto.getMedia() != null && !postDto.getMedia().isEmpty()) {
+      for (MediaDto mediaDto : postDto.getMedia()) {
+        // Only process media without an id (newly uploaded)
+        if (mediaDto.id() == null || mediaDto.id().isEmpty()) {
+          Media media = mediaMapper.toMedia(mediaDto);
+          media.setPost(post);
+          mediaRepository.save(media);
+        }
+      }
+    }
+
     Post updatedPost = postRepository.save(post);
     return mapper.toPostDto(updatedPost);
   }
