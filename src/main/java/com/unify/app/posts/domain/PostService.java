@@ -1,11 +1,6 @@
 package com.unify.app.posts.domain;
 
-import com.unify.app.posts.domain.models.Audience;
-import com.unify.app.posts.domain.models.PersonalizedPostDto;
-import com.unify.app.posts.domain.models.PostDto;
-import com.unify.app.posts.domain.models.PostFeedResponse;
-import com.unify.app.posts.domain.models.PostRowDto;
-import com.unify.app.posts.domain.models.PostTableResponse;
+import com.unify.app.posts.domain.models.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -34,11 +29,23 @@ public class PostService {
 
   private final PostRepository postRepository;
   private final PostMapper mapper;
+  private final MediaMapper mediaMapper;
+  private final MediaRepository mediaRepository;
 
   @CacheEvict(value = "personalizedFeedCache", allEntries = true)
   public PostDto createPost(PostDto postDTO) {
     Post post = mapper.toPost(postDTO);
     Post savedPost = postRepository.save(post);
+
+    // If media is included in the request, create it automatically
+    if (postDTO.getMedia() != null && !postDTO.getMedia().isEmpty()) {
+      for (MediaDto mediaDto : postDTO.getMedia()) {
+        Media media = mediaMapper.toMedia(mediaDto);
+        media.setPost(savedPost);
+        mediaRepository.save(media);
+      }
+    }
+
     return mapper.toPostDto(savedPost);
   }
 
