@@ -1,0 +1,50 @@
+ name: Unify CI/CD
+
+ env:
+   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+   DOCKER_IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/unify-backend
+ on:
+   push:
+     branches:
+       - main
+
+ jobs:
+   build:
+     name: Maven Build
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
+
+       - name: Setup Java
+         uses: actions/setup-java@v4
+         with:
+           java-version: "21"
+           distribution: "temurin"
+
+       - name: Cache Maven packages
+         uses: actions/cache@v4
+         with:
+           path: ~/.m2
+           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+           restore-keys: ${{ runner.os }}-m2
+
+       - name: Make Maven wrapper executable
+         run: chmod +x mvnw
+
+       - name: Build with Maven
+         run: ./mvnw -ntp verify
+
+       - name: Login to Docker Hub
+         uses: docker/login-action@v3
+         with:
+           username: ${{ env.DOCKERHUB_USERNAME }}
+           password: ${{ env.DOCKERHUB_TOKEN }}
+
+       - name: Build and Publish Docker Image
+         env:
+           DOCKER_IMAGE_NAME: ${{ env.DOCKER_IMAGE_NAME }}
+         run: |
+           ./mvnw spring-boot:build-image -DskipTests
+           echo "Pushing the image $DOCKER_IMAGE_NAME to Docker Hub..."
+           docker push $DOCKER_IMAGE_NAME
