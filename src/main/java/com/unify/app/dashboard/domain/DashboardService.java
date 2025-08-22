@@ -1,8 +1,16 @@
 package com.unify.app.dashboard.domain;
 
 import com.unify.app.dashboard.domain.models.DashboardStatsDto;
+import com.unify.app.dashboard.domain.models.UserAnalyticsDto;
+import com.unify.app.dashboard.domain.models.UserAnalyticsResponse;
 import java.time.LocalDateTime;
+import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -51,16 +59,16 @@ public class DashboardService {
     Double activeUserGrowthPercent =
         calculateGrowthPercent(activeUsersLastMonth, newActiveUsersThisMonth);
 
-    DashboardStatsDto stats = new DashboardStatsDto();
-    stats.setTotalUsers(totalUsers);
-    stats.setTotalPosts(totalPosts);
-    stats.setTotalPendingReports(totalPendingReports);
-    stats.setActiveUsers(activeUsers);
-    stats.setUserGrowthPercent(userGrowthPercent);
-    stats.setPostGrowthPercent(postGrowthPercent);
-    stats.setActiveUserGrowthPercent(activeUserGrowthPercent);
-    stats.setNewReportsToday(newReportsToday);
-    return stats;
+    return DashboardStatsDto.builder()
+        .totalUsers(totalUsers)
+        .totalPosts(totalPosts)
+        .totalPendingReports(totalPendingReports)
+        .activeUsers(activeUsers)
+        .userGrowthPercent(userGrowthPercent)
+        .postGrowthPercent(postGrowthPercent)
+        .activeUserGrowthPercent(activeUserGrowthPercent)
+        .newReportsToday(newReportsToday)
+        .build();
   }
 
   private Double calculateGrowthPercent(Long lastMonthValue, Long currentValue) {
@@ -70,5 +78,201 @@ public class DashboardService {
 
     double growth = ((double) (currentValue) / (lastMonthValue + currentValue)) * 100;
     return Math.round(growth * 10.0) / 10.0; // Round to 1 decimal place
+  }
+
+  public UserAnalyticsResponse getUserAnalytics(String period) {
+    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime startDate;
+    LocalDateTime endDate;
+
+    switch (period.toLowerCase()) {
+      case "7days":
+        // Current week: Sunday to Saturday
+        // Calculate days since last Sunday
+        int daysSinceSunday = now.getDayOfWeek().getValue() % 7;
+        LocalDateTime sunday = now.minusDays(daysSinceSunday);
+        LocalDateTime saturday = sunday.plusDays(6);
+        startDate = sunday.withHour(0).withMinute(0).withSecond(0).withNano(0);
+        endDate = saturday.withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+        return getAnalyticsFor7Days(startDate, endDate);
+      case "30days":
+        // Current month: 1st to last day of month
+        startDate = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        endDate =
+            now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
+                .withHour(23)
+                .withMinute(59)
+                .withSecond(59)
+                .withNano(999999999);
+        return getAnalyticsFor30Days(startDate, endDate);
+      case "12months":
+        // Current year: January 1st to December 31st
+        startDate =
+            now.withMonth(1).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        endDate =
+            now.withMonth(12)
+                .withDayOfMonth(31)
+                .withHour(23)
+                .withMinute(59)
+                .withSecond(59)
+                .withNano(999999999);
+        return getAnalyticsFor12Months(startDate, endDate);
+      default:
+        throw new IllegalArgumentException(
+            "Invalid period. Must be '7days', '30days', or '12months'");
+    }
+  }
+
+  private UserAnalyticsResponse getAnalyticsFor7Days(
+      LocalDateTime startDate, LocalDateTime endDate) {
+    List<Object[]> newUsersData = dashboardRepository.getNewUsersByDay(startDate, endDate);
+    List<Object[]> activeUsersData = dashboardRepository.getActiveUsersByDay(startDate, endDate);
+
+    Map<String, Long> newUsersMap = new HashMap<>();
+    Map<String, Long> activeUsersMap = new HashMap<>();
+
+    // Process new users data
+    for (Object[] row : newUsersData) {
+      String date = row[0].toString();
+      Long count = (Long) row[1];
+      newUsersMap.put(date, count);
+    }
+
+    // Process active users data
+    for (Object[] row : activeUsersData) {
+      String date = row[0].toString();
+      Long count = (Long) row[1];
+      activeUsersMap.put(date, count);
+    }
+
+    List<UserAnalyticsDto> analyticsData = new ArrayList<>();
+
+    // Generate data for Sunday to Saturday (7 days)
+    for (int i = 0; i < 7; i++) {
+      LocalDateTime currentDate = startDate.plus(i, ChronoUnit.DAYS);
+      String dayName = currentDate.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
+      String dateKey = currentDate.toLocalDate().toString();
+
+      UserAnalyticsDto dto =
+          UserAnalyticsDto.builder()
+              .day(dayName)
+              .newUsers(newUsersMap.getOrDefault(dateKey, 0L))
+              .activeUsers(activeUsersMap.getOrDefault(dateKey, 0L))
+              .build();
+      analyticsData.add(dto);
+    }
+
+    return UserAnalyticsResponse.builder().data(analyticsData).build();
+  }
+
+  private UserAnalyticsResponse getAnalyticsFor30Days(
+      LocalDateTime startDate, LocalDateTime endDate) {
+    List<Object[]> newUsersData = dashboardRepository.getNewUsersByWeek(startDate, endDate);
+    List<Object[]> activeUsersData = dashboardRepository.getActiveUsersByWeek(startDate, endDate);
+
+    Map<Integer, Long> newUsersMap = new HashMap<>();
+    Map<Integer, Long> activeUsersMap = new HashMap<>();
+
+    // Process new users data
+    for (Object[] row : newUsersData) {
+      Integer week = (Integer) row[0];
+      Long count = (Long) row[1];
+      newUsersMap.put(week, count);
+    }
+
+    // Process active users data
+    for (Object[] row : activeUsersData) {
+      Integer week = (Integer) row[0];
+      Long count = (Long) row[1];
+      activeUsersMap.put(week, count);
+    }
+
+    List<UserAnalyticsDto> analyticsData = new ArrayList<>();
+
+    // Calculate weeks dynamically based on the date range
+    int startWeek = startDate.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear());
+    int endWeek = endDate.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear());
+
+    // Handle year boundary
+    int currentWeek = startWeek;
+    int weekCount = 0;
+
+    while (weekCount < 4 && currentWeek <= endWeek) {
+      UserAnalyticsDto dto =
+          UserAnalyticsDto.builder()
+              .day("Week " + (weekCount + 1))
+              .newUsers(newUsersMap.getOrDefault(currentWeek, 0L))
+              .activeUsers(activeUsersMap.getOrDefault(currentWeek, 0L))
+              .build();
+      analyticsData.add(dto);
+
+      currentWeek++;
+      weekCount++;
+
+      // Handle year boundary
+      if (currentWeek > 53) {
+        currentWeek = 1;
+      }
+    }
+
+    return UserAnalyticsResponse.builder().data(analyticsData).build();
+  }
+
+  private UserAnalyticsResponse getAnalyticsFor12Months(
+      LocalDateTime startDate, LocalDateTime endDate) {
+    List<Object[]> newUsersData = dashboardRepository.getNewUsersByMonth(startDate, endDate);
+    List<Object[]> activeUsersData = dashboardRepository.getActiveUsersByMonth(startDate, endDate);
+
+    Map<Integer, Long> newUsersMap = new HashMap<>();
+    Map<Integer, Long> activeUsersMap = new HashMap<>();
+
+    // Process new users data
+    for (Object[] row : newUsersData) {
+      Integer month = (Integer) row[0];
+      Long count = (Long) row[1];
+      newUsersMap.put(month, count);
+    }
+
+    // Process active users data
+    for (Object[] row : activeUsersData) {
+      Integer month = (Integer) row[0];
+      Long count = (Long) row[1];
+      activeUsersMap.put(month, count);
+    }
+
+    List<UserAnalyticsDto> analyticsData = new ArrayList<>();
+    String[] monthNames = {
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    };
+
+    // Calculate months dynamically based on the date range
+    int startMonth = startDate.getMonthValue();
+    int endMonth = endDate.getMonthValue();
+    int startYear = startDate.getYear();
+    int endYear = endDate.getYear();
+
+    int currentMonth = startMonth;
+    int currentYear = startYear;
+    int monthCount = 0;
+
+    while (monthCount < 12
+        && (currentYear < endYear || (currentYear == endYear && currentMonth <= endMonth))) {
+      UserAnalyticsDto dto =
+          UserAnalyticsDto.builder()
+              .month(monthNames[currentMonth - 1])
+              .newUsers(newUsersMap.getOrDefault(currentMonth, 0L))
+              .activeUsers(activeUsersMap.getOrDefault(currentMonth, 0L))
+              .build();
+      analyticsData.add(dto);
+
+      currentMonth++;
+      if (currentMonth > 12) {
+        currentMonth = 1;
+        currentYear++;
+      }
+      monthCount++;
+    }
+
+    return UserAnalyticsResponse.builder().data(analyticsData).build();
   }
 }
