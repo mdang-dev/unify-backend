@@ -1,5 +1,6 @@
 package com.unify.app.dashboard.domain;
 
+import com.unify.app.reports.domain.models.EntityType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
@@ -190,5 +191,89 @@ public class DashboardRepository {
     query.setParameter("startDate", startDate);
     query.setParameter("endDate", endDate);
     return query.getResultList();
+  }
+
+  // Get reported posts with latest report info
+  public List<Object[]> getReportedPosts() {
+    Query query =
+        entityManager.createQuery(
+            "SELECT r.reportedId, MAX(r.reportedAt) as latestReportedAt, COUNT(r) as reportCount, "
+                + "p.captions, CONCAT(u.firstName, ' ', u.lastName) as authorName, u.id as authorId "
+                + "FROM Report r "
+                + "LEFT JOIN Post p ON p.id = r.reportedId "
+                + "LEFT JOIN User u ON u.id = p.user.id "
+                + "WHERE r.entityType = 'POST' "
+                + "GROUP BY r.reportedId, p.captions, u.firstName, u.lastName, u.id "
+                + "ORDER BY latestReportedAt DESC");
+    return query.getResultList();
+  }
+
+  // Get reported users with latest report info
+  public List<Object[]> getReportedUsers() {
+    Query query =
+        entityManager.createQuery(
+            "SELECT r.reportedId, MAX(r.reportedAt) as latestReportedAt, COUNT(r) as reportCount, "
+                + "CONCAT(u.firstName, ' ', u.lastName) as userName, u.email as userEmail, "
+                + "(SELECT a.url FROM Avatar a WHERE a.user.id = u.id ORDER BY a.createdAt DESC LIMIT 1) as userAvatar "
+                + "FROM Report r "
+                + "LEFT JOIN User u ON u.id = r.reportedId "
+                + "WHERE r.entityType = 'USER' "
+                + "GROUP BY r.reportedId, u.firstName, u.lastName, u.email, u.id "
+                + "ORDER BY latestReportedAt DESC");
+    return query.getResultList();
+  }
+
+  // Get reported comments with latest report info
+  public List<Object[]> getReportedComments() {
+    Query query =
+        entityManager.createQuery(
+            "SELECT r.reportedId, MAX(r.reportedAt) as latestReportedAt, COUNT(r) as reportCount, "
+                + "c.content as commentContent, CONCAT(u.firstName, ' ', u.lastName) as authorName, u.id as authorId, "
+                + "p.captions as postTitle "
+                + "FROM Report r "
+                + "LEFT JOIN Comment c ON c.id = r.reportedId "
+                + "LEFT JOIN User u ON u.id = c.user.id "
+                + "LEFT JOIN Post p ON p.id = c.post.id "
+                + "WHERE r.entityType = 'COMMENT' "
+                + "GROUP BY r.reportedId, c.content, u.firstName, u.lastName, u.id, p.captions "
+                + "ORDER BY latestReportedAt DESC");
+    return query.getResultList();
+  }
+
+  // Get pending reports count by type
+  public List<Object[]> getPendingReportsByType() {
+    Query query =
+        entityManager.createQuery(
+            "SELECT r.entityType, COUNT(r) as count "
+                + "FROM Report r "
+                + "WHERE r.status = 1 "
+                + "GROUP BY r.entityType");
+    return query.getResultList();
+  }
+
+  // Get resolved reports count for today (status changed from 1 to 0 or 2)
+  public Long getResolvedReportsToday() {
+    Query query =
+        entityManager.createQuery(
+            "SELECT COUNT(r) FROM Report r "
+                + "WHERE CAST(r.reportedAt AS date) = CURRENT_DATE AND r.status IN (0, 2)");
+    return (Long) query.getSingleResult();
+  }
+
+  // Get total reports count by entity type
+  public Long getTotalReportsByType(EntityType entityType) {
+    Query query =
+        entityManager.createQuery("SELECT COUNT(r) FROM Report r WHERE r.entityType = :entityType");
+    query.setParameter("entityType", entityType);
+    return (Long) query.getSingleResult();
+  }
+
+  // Get pending reports count by entity type
+  public Long getPendingReportsByType(EntityType entityType) {
+    Query query =
+        entityManager.createQuery(
+            "SELECT COUNT(r) FROM Report r WHERE r.entityType = :entityType AND r.status = 1");
+    query.setParameter("entityType", entityType);
+    return (Long) query.getSingleResult();
   }
 }

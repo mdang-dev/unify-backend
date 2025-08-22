@@ -1,8 +1,12 @@
 package com.unify.app.dashboard.domain;
 
 import com.unify.app.dashboard.domain.models.DashboardStatsDto;
+import com.unify.app.dashboard.domain.models.ReportedItemDto;
+import com.unify.app.dashboard.domain.models.ReportsResponse;
+import com.unify.app.dashboard.domain.models.ReportsSummaryDto;
 import com.unify.app.dashboard.domain.models.UserAnalyticsDto;
 import com.unify.app.dashboard.domain.models.UserAnalyticsResponse;
+import com.unify.app.reports.domain.models.EntityType;
 import java.time.LocalDateTime;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
@@ -274,5 +278,133 @@ public class DashboardService {
     }
 
     return UserAnalyticsResponse.builder().data(analyticsData).build();
+  }
+
+  // Reports methods
+  public ReportsResponse getReportedPosts() {
+    List<Object[]> reportsData = dashboardRepository.getReportedPosts();
+    List<ReportedItemDto> data = new ArrayList<>();
+
+    // Limit to 4 records for quick review
+    int limit = Math.min(4, reportsData.size());
+    for (int i = 0; i < limit; i++) {
+      Object[] row = reportsData.get(i);
+      ReportedItemDto dto =
+          ReportedItemDto.builder()
+              .reportedId((String) row[0])
+              .latestReportedAt((LocalDateTime) row[1])
+              .reportCount((Long) row[2])
+              .type("post")
+              .postTitle((String) row[3])
+              .authorName((String) row[4])
+              .authorId((String) row[5])
+              .build();
+      data.add(dto);
+    }
+
+    // Get total and pending counts for posts specifically
+    Long total = dashboardRepository.getTotalReportsByType(EntityType.POST);
+    Long pendingCount = dashboardRepository.getPendingReportsByType(EntityType.POST);
+
+    return ReportsResponse.builder().data(data).total(total).pendingCount(pendingCount).build();
+  }
+
+  public ReportsResponse getReportedUsers() {
+    List<Object[]> reportsData = dashboardRepository.getReportedUsers();
+    List<ReportedItemDto> data = new ArrayList<>();
+
+    // Limit to 4 records for quick review
+    int limit = Math.min(4, reportsData.size());
+    for (int i = 0; i < limit; i++) {
+      Object[] row = reportsData.get(i);
+      ReportedItemDto dto =
+          ReportedItemDto.builder()
+              .reportedId((String) row[0])
+              .latestReportedAt((LocalDateTime) row[1])
+              .reportCount((Long) row[2])
+              .type("user")
+              .userName((String) row[3])
+              .userEmail((String) row[4])
+              .userAvatar((String) row[5])
+              .build();
+      data.add(dto);
+    }
+
+    // Get total and pending counts for users specifically
+    Long total = dashboardRepository.getTotalReportsByType(EntityType.USER);
+    Long pendingCount = dashboardRepository.getPendingReportsByType(EntityType.USER);
+
+    return ReportsResponse.builder().data(data).total(total).pendingCount(pendingCount).build();
+  }
+
+  public ReportsResponse getReportedComments() {
+    List<Object[]> reportsData = dashboardRepository.getReportedComments();
+    List<ReportedItemDto> data = new ArrayList<>();
+
+    // Limit to 4 records for quick review
+    int limit = Math.min(4, reportsData.size());
+    for (int i = 0; i < limit; i++) {
+      Object[] row = reportsData.get(i);
+      ReportedItemDto dto =
+          ReportedItemDto.builder()
+              .reportedId((String) row[0])
+              .latestReportedAt((LocalDateTime) row[1])
+              .reportCount((Long) row[2])
+              .type("comment")
+              .commentContent((String) row[3])
+              .authorName((String) row[4])
+              .authorId((String) row[5])
+              .parentPostTitle((String) row[6])
+              .build();
+      data.add(dto);
+    }
+
+    // Get total and pending counts for comments specifically
+    Long total = dashboardRepository.getTotalReportsByType(EntityType.COMMENT);
+    Long pendingCount = dashboardRepository.getPendingReportsByType(EntityType.COMMENT);
+
+    return ReportsResponse.builder().data(data).total(total).pendingCount(pendingCount).build();
+  }
+
+  public ReportsSummaryDto getReportsSummary() {
+    Long totalPendingReports = dashboardRepository.getTotalPendingReports();
+    List<Object[]> reportsByType = dashboardRepository.getPendingReportsByType();
+    Long newReportsToday = dashboardRepository.getNewReportsToday();
+    Long resolvedReportsToday = dashboardRepository.getResolvedReportsToday();
+
+    // Build reports by type
+    ReportsSummaryDto.ReportsByTypeDto reportsByTypeDto =
+        ReportsSummaryDto.ReportsByTypeDto.builder()
+            .posts(ReportsSummaryDto.ReportTypeCountDto.builder().count(0L).build())
+            .users(ReportsSummaryDto.ReportTypeCountDto.builder().count(0L).build())
+            .comments(ReportsSummaryDto.ReportTypeCountDto.builder().count(0L).build())
+            .build();
+
+    for (Object[] row : reportsByType) {
+      EntityType entityType = (EntityType) row[0];
+      Long count = (Long) row[1];
+
+      switch (entityType) {
+        case POST:
+          reportsByTypeDto.setPosts(
+              ReportsSummaryDto.ReportTypeCountDto.builder().count(count).build());
+          break;
+        case USER:
+          reportsByTypeDto.setUsers(
+              ReportsSummaryDto.ReportTypeCountDto.builder().count(count).build());
+          break;
+        case COMMENT:
+          reportsByTypeDto.setComments(
+              ReportsSummaryDto.ReportTypeCountDto.builder().count(count).build());
+          break;
+      }
+    }
+
+    return ReportsSummaryDto.builder()
+        .totalPendingReports(totalPendingReports)
+        .reportsByType(reportsByTypeDto)
+        .newReportsToday(newReportsToday)
+        .resolvedReportsToday(resolvedReportsToday)
+        .build();
   }
 }
