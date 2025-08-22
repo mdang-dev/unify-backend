@@ -16,4 +16,5 @@ public record EditProfileDto(
     String location,
     String education,
     String workAt,
-    String biography) {}
+    String biography,
+    AvatarDto avatar) {}

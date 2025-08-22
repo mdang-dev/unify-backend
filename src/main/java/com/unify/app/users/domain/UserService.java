@@ -283,6 +283,38 @@ public class UserService {
       existingUser.setBiography(editProfileDto.biography());
     }
 
+    // Handle avatar update
+    if (editProfileDto.avatar() != null) {
+      AvatarDto avatarDto = editProfileDto.avatar();
+
+      // If avatar has an ID, update existing avatar
+      if (avatarDto.id() != null) {
+        Avatar existingAvatar =
+            avatarRepository
+                .findById(avatarDto.id())
+                .orElseThrow(() -> new RuntimeException("Avatar not found"));
+
+        // Verify the avatar belongs to the current user
+        if (!existingAvatar.getUser().getId().equals(existingUser.getId())) {
+          throw new RuntimeException("Avatar does not belong to current user");
+        }
+
+        existingAvatar.setUrl(avatarDto.url());
+        avatarRepository.save(existingAvatar);
+      } else {
+        // Create new avatar if no ID provided
+        Avatar newAvatar = Avatar.builder().url(avatarDto.url()).user(existingUser).build();
+
+        Avatar savedAvatar = avatarRepository.save(newAvatar);
+
+        // Add to user's avatar collection
+        if (existingUser.getAvatars() == null) {
+          existingUser.setAvatars(new HashSet<>());
+        }
+        existingUser.getAvatars().add(savedAvatar);
+      }
+    }
+
     User updatedUser = userRepository.save(existingUser);
     return userMapper.toUserDTO(updatedUser);
   }
