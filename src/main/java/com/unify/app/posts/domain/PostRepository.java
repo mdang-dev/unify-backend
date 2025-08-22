@@ -81,6 +81,7 @@ interface PostRepository extends JpaRepository<Post, String> {
                 AND p.user.id IN (
                     SELECT f.userFollowing.id FROM Follower f WHERE f.userFollower.id = :userId
                 )
+                AND p.user.status = 0
                 GROUP BY p
                 ORDER BY p.postedAt DESC
             """)
@@ -102,6 +103,7 @@ interface PostRepository extends JpaRepository<Post, String> {
                     SELECT f.userFollowing.id FROM Follower f WHERE f.userFollower.id = :userId
                 )
                 AND p.user.id != :userId
+                AND p.user.status = 0
                 GROUP BY p
                 ORDER BY COUNT(DISTINCT lp.id) + COUNT(DISTINCT pc.id) DESC, p.postedAt DESC
             """)
@@ -120,6 +122,7 @@ interface PostRepository extends JpaRepository<Post, String> {
                 LEFT JOIN p.comments pc
                 WHERE p.status != 2
                 AND p.user.id != :userId
+                AND p.user.status = 0
                 GROUP BY p
                 ORDER BY
                     CASE WHEN p.user.id IN (
@@ -143,6 +146,7 @@ interface PostRepository extends JpaRepository<Post, String> {
                 LEFT JOIN p.comments pc
                 WHERE p.status = 1
                   AND p.user.id != :userId
+                  AND p.user.status = 0
                 GROUP BY p
                 ORDER BY
                   CASE WHEN p.user.id IN (
@@ -170,6 +174,7 @@ interface PostRepository extends JpaRepository<Post, String> {
                 LEFT JOIN p.comments pc
                 WHERE p.status = 1
                   AND p.user.id = :userId
+                  AND p.user.status = 0
                 GROUP BY p
                 ORDER BY p.postedAt DESC
             """)
@@ -189,6 +194,7 @@ interface PostRepository extends JpaRepository<Post, String> {
                   AND p.user.id IN (
                       SELECT f.userFollowing.id FROM Follower f WHERE f.userFollower.id = :userId
                   )
+                  AND p.user.status = 0
                 GROUP BY p
                 ORDER BY p.postedAt DESC
             """)
@@ -209,6 +215,7 @@ interface PostRepository extends JpaRepository<Post, String> {
                       SELECT f.userFollowing.id FROM Follower f WHERE f.userFollower.id = :userId
                   )
                   AND p.user.id != :userId
+                  AND p.user.status = 0
                 GROUP BY p
                 ORDER BY COUNT(DISTINCT lp.id) + COUNT(DISTINCT pc.id) DESC, p.postedAt DESC
             """)
@@ -220,6 +227,7 @@ interface PostRepository extends JpaRepository<Post, String> {
     FROM Post p
     LEFT JOIN p.comments pc
     WHERE p.status != 2 AND (pc.status = 0 OR pc IS NULL)
+    AND p.user.status = 0
     GROUP BY p
 """)
   List<Object[]> findPostsWithCommentCount();
@@ -230,6 +238,7 @@ interface PostRepository extends JpaRepository<Post, String> {
     FROM Post p
     LEFT JOIN p.comments pc
     WHERE p.id = :postId AND p.status != 2 AND (pc.status = 0 OR pc IS NULL)
+    AND p.user.status = 0
     GROUP BY p
 """)
   Object[] findPostWithCommentCountById(@Param("postId") String postId);
@@ -242,6 +251,7 @@ interface PostRepository extends JpaRepository<Post, String> {
                   JOIN p.media m
                   LEFT JOIN p.comments c ON c.status = 0
                   WHERE m.mediaType = 'VIDEO' AND p.status != 2
+                  AND p.user.status = 0
                   GROUP BY p
                   """,
       countQuery =
@@ -250,6 +260,7 @@ interface PostRepository extends JpaRepository<Post, String> {
                   FROM Post p
                   JOIN p.media m
                   WHERE m.mediaType = 'VIDEO' AND p.status != 2
+                  AND p.user.status = 0
                   """)
   Page<Object[]> findReelsPostsWithCommentCount(Pageable pageable);
 
@@ -258,11 +269,13 @@ interface PostRepository extends JpaRepository<Post, String> {
           """
                 SELECT p.* FROM Posts p
                 LEFT JOIN comments c ON p.id = c.post_id
+                LEFT JOIN users u ON p.user_id = u.id
                 WHERE (:captions IS NULL OR LOWER(CAST(p.captions AS TEXT)) LIKE LOWER(CONCAT('%', :captions, '%')))
                 AND (:status IS NULL OR p.status = :status)
                 AND (:audience IS NULL OR p.audience = :audience)
                 AND (:isCommentVisible IS NULL OR p.is_comment_visible = CAST(:isCommentVisible AS boolean))
                 AND (:isLikeVisible IS NULL OR p.is_like_visible = CAST(:isLikeVisible AS boolean))
+                AND u.status = 0
                 GROUP BY p.id, p.captions, p.status, p.audience, p.posted_at, p.is_comment_visible, p.is_like_visible, p.updated_at, p.user_id
                 HAVING (:commentCount IS NULL OR
                     CASE
@@ -279,11 +292,13 @@ interface PostRepository extends JpaRepository<Post, String> {
       countQuery =
           """
                 SELECT COUNT(DISTINCT p.id) FROM Posts p
+                LEFT JOIN users u ON p.user_id = u.id
                 WHERE (:captions IS NULL OR LOWER(CAST(p.captions AS TEXT)) LIKE LOWER(CONCAT('%', :captions, '%')))
                 AND (:status IS NULL OR p.status = :status)
                 AND (:audience IS NULL OR p.audience = :audience)
                 AND (:isCommentVisible IS NULL OR p.is_comment_visible = CAST(:isCommentVisible AS boolean))
                 AND (:isLikeVisible IS NULL OR p.is_like_visible = CAST(:isLikeVisible AS boolean))
+                AND u.status = 0
                 AND (:commentCount IS NULL OR
                     CASE
                         WHEN :commentCountOperator = '>' THEN (SELECT COUNT(*) FROM comments WHERE post_id = p.id) > :commentCount
@@ -322,6 +337,7 @@ interface PostRepository extends JpaRepository<Post, String> {
                 AND (:isCommentVisible IS NULL OR p.is_comment_visible = CAST(:isCommentVisible AS boolean))
                 AND (:isLikeVisible IS NULL OR p.is_like_visible = CAST(:isLikeVisible AS boolean))
                 AND (:hashtag IS NULL OR LOWER(h.content) LIKE LOWER(CONCAT('%', :hashtag, '%')))
+                AND u.status = 0
                 GROUP BY p.id, p.captions, p.status, p.audience, p.posted_at,
                          p.is_comment_visible, p.is_like_visible, p.updated_at, p.user_id,
                          u.first_name, u.last_name, u.user_name
@@ -340,6 +356,7 @@ interface PostRepository extends JpaRepository<Post, String> {
       countQuery =
           """
                 SELECT COUNT(DISTINCT p.id) FROM Posts p
+                LEFT JOIN users u ON p.user_id = u.id
                 LEFT JOIN hashtag_details hd ON p.id = hd.post_id
                 LEFT JOIN Hashtags h ON hd.hashtag_id = h.id
                 WHERE (:captions IS NULL OR LOWER(CAST(p.captions AS TEXT)) LIKE LOWER(CONCAT('%', :captions, '%')))
@@ -348,6 +365,7 @@ interface PostRepository extends JpaRepository<Post, String> {
                 AND (:isCommentVisible IS NULL OR p.is_comment_visible = CAST(:isCommentVisible AS boolean))
                 AND (:isLikeVisible IS NULL OR p.is_like_visible = CAST(:isLikeVisible AS boolean))
                 AND (:hashtag IS NULL OR LOWER(h.content) LIKE LOWER(CONCAT('%', :hashtag, '%')))
+                AND u.status = 0
             """,
       nativeQuery = true)
   Page<Object[]> findPostsForTable(
