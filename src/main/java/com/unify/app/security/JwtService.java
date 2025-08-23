@@ -60,8 +60,6 @@ public class JwtService {
       Date expirationTime = signed.getJWTClaimsSet().getExpirationTime();
       return signed.verify(verifier) && expirationTime.after(new Date());
     } catch (ParseException | JOSEException e) {
-
-      System.out.println("Error validating token: " + e.getMessage());
       throw new RuntimeException("Invalid token format or verification failed", e);
     }
   }

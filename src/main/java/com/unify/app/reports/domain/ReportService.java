@@ -3,6 +3,8 @@ package com.unify.app.reports.domain;
 import com.unify.app.comments.domain.Comment;
 import com.unify.app.comments.domain.CommentMapper;
 import com.unify.app.comments.domain.CommentService;
+import com.unify.app.notifications.domain.NotificationService;
+import com.unify.app.notifications.domain.ReportNotificationService;
 import com.unify.app.posts.domain.Post;
 import com.unify.app.posts.domain.PostMapper;
 import com.unify.app.posts.domain.PostService;
@@ -37,6 +39,8 @@ public class ReportService {
   private final PostMapper postMapper;
   private final CommentMapper commentMapper;
   private final ReportImageRepository reportImageRepository;
+  private final NotificationService notificationService;
+  private final ReportNotificationService reportNotificationService;
 
   public static final int PENDING = 0;
   public static final int APPROVED = 1;
@@ -372,22 +376,59 @@ public class ReportService {
         Post post = postService.findById(report.getReportedId());
         post.setStatus(2); // Hide post
         postService.update(post);
+
+        // Send notification to the post owner about the approved report
+        reportNotificationService.sendReportApprovedNotification(
+            post.getUser().getId(), // Post owner ID
+            report.getEntityType(),
+            report.getReportedId(),
+            "SYSTEM", // System admin ID
+            report.getAdminReason() // Admin reason
+            );
       }
       case USER -> {
         User user = userService.findUserById(report.getReportedId());
         user.setReportApprovalCount(user.getReportApprovalCount() + 1);
         int count = user.getReportApprovalCount();
+
+        // Send type-specific notification using ReportNotificationService
+        reportNotificationService.sendReportApprovedNotification(
+            user.getId(),
+            report.getEntityType(),
+            report.getReportedId(),
+            "SYSTEM", // System admin ID
+            report.getAdminReason() // Admin reason
+            );
+
+        // Check thresholds and apply appropriate actions
         if (count >= 5) {
           user.setStatus(2); // Permanent ban
+          // Send permanent ban notification
+          reportNotificationService.sendAccountBannedNotification(user.getId(), count, "SYSTEM");
         } else if (count >= 3 && user.getStatus() != 2) {
           user.setStatus(1); // Temporary ban
+          // Send temporary ban notification
+          reportNotificationService.sendAccountSuspendedNotification(user.getId(), count, "SYSTEM");
         }
+
         userService.update(user);
+
+        // Send real-time WebSocket event for report count update
+        notificationService.sendReportCountUpdate(user.getId(), count);
       }
       case COMMENT -> {
         Comment comment = commentService.findById(report.getReportedId());
         comment.setStatus(2); // Hide comment
         commentService.update(comment);
+
+        // Send notification to the comment owner about the approved report
+        reportNotificationService.sendReportApprovedNotification(
+            comment.getUser().getId(), // Comment owner ID
+            report.getEntityType(),
+            report.getReportedId(),
+            "SYSTEM", // System admin ID
+            report.getAdminReason() // Admin reason
+            );
 
         // Hide all replies to this comment
         commentService

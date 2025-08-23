@@ -10,7 +10,7 @@ spring:
 
   jackson:
     time-zone: Asia/Ho_Chi_Minh
-    default-property-inclusion: non_null
+    default-property-inclusion: NON_NULL
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/postgres}

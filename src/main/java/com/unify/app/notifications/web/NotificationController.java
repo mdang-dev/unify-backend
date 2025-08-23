@@ -106,7 +106,6 @@ class NotificationController {
       }
 
       notificationService.markAllAsRead(request.userId());
-      log.info("Marked all notifications as read for user: {}", request.userId());
 
       return ResponseEntity.ok().build();
     } catch (Exception e) {
