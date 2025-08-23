@@ -154,6 +154,61 @@ public class PostService {
     return new ArrayList<>();
   }
 
+  public PostFeedResponse getPostsByHashtagWithPagination(String hashtag, Pageable pageable) {
+    try {
+      int pageSize = pageable.getPageSize();
+      int pageNumber = pageable.getPageNumber();
+
+      // Fetch posts by hashtag with pagination support
+      Page<Object[]> results = postRepository.findPostsByHashtagWithPagination(hashtag, pageable);
+
+      // Convert to PostDto with comment count
+      List<PostDto> posts =
+          results.getContent().stream()
+              .map(
+                  result -> {
+                    Post post = (Post) result[0];
+                    Long commentCount = (Long) result[1];
+                    PostDto postDto = mapper.toPostDto(post);
+                    postDto.setCommentCount(commentCount);
+                    return postDto;
+                  })
+              .collect(Collectors.toList());
+
+      // Check if there are more posts available
+      boolean hasNext = results.hasNext();
+
+      return new PostFeedResponse(posts, hasNext, pageNumber);
+    } catch (Exception e) {
+      // Log the error for debugging
+      System.err.println("Error fetching posts by hashtag: " + hashtag + " - " + e.getMessage());
+      e.printStackTrace();
+
+      // Try fallback method - search in post captions
+      try {
+        System.out.println("Trying fallback method for hashtag: " + hashtag);
+        List<Post> fallbackPosts =
+            postRepository.findAll().stream()
+                .filter(
+                    post ->
+                        post.getCaptions() != null
+                            && post.getCaptions().toLowerCase().contains(hashtag.toLowerCase())
+                            && post.getStatus() == 1)
+                .limit(pageable.getPageSize())
+                .collect(Collectors.toList());
+
+        List<PostDto> fallbackPostDtos =
+            fallbackPosts.stream().map(mapper::toPostDto).collect(Collectors.toList());
+
+        return new PostFeedResponse(fallbackPostDtos, false, pageable.getPageNumber());
+      } catch (Exception fallbackError) {
+        System.err.println("Fallback method also failed: " + fallbackError.getMessage());
+        // Return empty response as last resort
+        return new PostFeedResponse(new ArrayList<>(), false, pageable.getPageNumber());
+      }
+    }
+  }
+
   public List<PostDto> getRecommendedPosts(String userId) {
     List<Post> posts =
         postRepository.findPostsWithInteractionCounts().stream()

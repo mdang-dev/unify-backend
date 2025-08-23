@@ -9,6 +9,7 @@ import com.unify.app.security.SecurityService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -117,8 +118,33 @@ class PostController {
   }
 
   @GetMapping("/hashtag/{content}")
-  public ResponseEntity<List<PostDto>> getPostsByHashtag(@PathVariable("content") String content) {
-    return ResponseEntity.ok(postService.getPostsByHashtag("#" + content));
+  public ResponseEntity<PostFeedResponse> getPostsByHashtag(
+      @PathVariable("content") String content,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "12") int size) {
+    try {
+      String userId = securityService.getCurrentUserId();
+      Pageable pageable = PageRequest.of(page, size, Sort.by("postedAt").descending());
+
+      System.out.println("Fetching posts for hashtag: #" + content + " for user: " + userId);
+
+      // Remove the # symbol from the hashtag for searching
+      String cleanHashtag = content.startsWith("#") ? content.substring(1) : content;
+
+      PostFeedResponse response =
+          postService.getPostsByHashtagWithPagination("#" + cleanHashtag, pageable);
+
+      System.out.println(
+          "Found " + response.posts().size() + " posts for hashtag: #" + cleanHashtag);
+
+      return ResponseEntity.ok(response);
+    } catch (Exception e) {
+      System.err.println("Error in getPostsByHashtag: " + e.getMessage());
+      e.printStackTrace();
+
+      // Return empty response instead of throwing exception
+      return ResponseEntity.ok(new PostFeedResponse(new ArrayList<>(), false, page));
+    }
   }
 
   @GetMapping("/explorer")
