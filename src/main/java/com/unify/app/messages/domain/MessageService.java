@@ -116,6 +116,11 @@ public class MessageService {
                   public LocalDateTime getLastMessageTime() {
                     return latestMessage.getTimestamp();
                   }
+
+                    @Override
+                    public String getLastMessageSender() {
+                        return latestMessage.getSender();
+                    }
                 };
               })
           .filter(chat -> chat != null)
@@ -148,53 +153,41 @@ public class MessageService {
     }
   }
 
-  private ChatDto buildChatDto(ChatPreviewProjection chat) {
-    if (chat == null) {
-      return null;
+    private ChatDto buildChatDto(ChatPreviewProjection chat) {
+        if (chat == null) return null;
+
+        String otherUserId = chat.get_id();
+        if (otherUserId == null || otherUserId.trim().isEmpty()) return null;
+
+        try {
+            UserDto user = getUserDataWithFallback(otherUserId);
+
+
+            return ChatDto.builder()
+                    .userId(user != null ? user.id() : otherUserId)
+                    .username(user != null ? safeString(user.username()) : "Unknown User")
+                    .fullName(user != null ? buildFullName(user) : "Unknown User")
+                    .avatar(user != null ? user.avatar() : null)
+                    .lastMessage(safeString(chat.getLastMessage()))
+                    .lastMessageTime(chat.getLastMessageTime())
+                    .senderId(chat.getLastMessageSender())
+                    .build();
+
+        } catch (Exception e) {
+            return ChatDto.builder()
+                    .userId(otherUserId)
+                    .username("Unknown User")
+                    .fullName("Unknown User")
+                    .avatar(null)
+                    .lastMessage(safeString(chat.getLastMessage()))
+                    .lastMessageTime(chat.getLastMessageTime())
+                    .senderId(chat.getLastMessageSender()) // fallback
+                    .build();
+        }
     }
 
-    String otherUserId = chat.get_id();
-    if (otherUserId == null || otherUserId.trim().isEmpty()) {
-      return null;
-    }
 
-    try {
-      UserDto user = getUserDataWithFallback(otherUserId);
-      if (user == null || user.id() == null || user.id().trim().isEmpty()) {
-        return ChatDto.builder()
-            .userId(otherUserId)
-            .username("Unknown User")
-            .fullName("Unknown User")
-            .avatar(null)
-            .lastMessage(safeString(chat.getLastMessage()))
-            .lastMessageTime(chat.getLastMessageTime())
-            .build();
-      }
-
-      LocalDateTime lastMessageTime = chat.getLastMessageTime();
-
-      return ChatDto.builder()
-          .userId(user.id())
-          .username(safeString(user.username()))
-          .fullName(buildFullName(user))
-          .avatar(user.avatar())
-          .lastMessage(safeString(chat.getLastMessage()))
-          .lastMessageTime(lastMessageTime)
-          .build();
-
-    } catch (Exception e) {
-      return ChatDto.builder()
-          .userId(otherUserId)
-          .username("Unknown User")
-          .fullName("Unknown User")
-          .avatar(null)
-          .lastMessage(safeString(chat.getLastMessage()))
-          .lastMessageTime(chat.getLastMessageTime())
-          .build();
-    }
-  }
-
-  private UserDto getUserDataWithFallback(String userId) {
+    private UserDto getUserDataWithFallback(String userId) {
     try {
       return userService.findByIdSafe(userId);
     } catch (Exception e) {

@@ -31,7 +31,7 @@ public class MessageController {
   public void sendMessageHttp(@Payload MessageDto message) {
 
     MessageDto updateMessage = MessageDto.withCurrentTimestamp(message);
-
+      System.out.println("Message " + updateMessage);
     messagingTemplate.convertAndSend(
         "/user/" + message.sender() + "/queue/messages", updateMessage);
     messagingTemplate.convertAndSend(
