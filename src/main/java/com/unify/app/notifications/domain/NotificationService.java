@@ -36,20 +36,17 @@ public class NotificationService {
 
   public void sendNotification(String receiverId, NotificationDto notificationDTO) {
     try {
-      // ✅ DEBUG: Log the notification being sent to identify the issue
-      log.debug(
-          "Sending notification via WebSocket: id={}, isRead={}, type={}",
-          notificationDTO.getId(),
-          notificationDTO.isRead(),
-          notificationDTO.getType());
-
       simpMessagingTemplate.convertAndSend(
           "/user/" + receiverId + "/queue/notifications", notificationDTO);
 
     } catch (Exception e) {
       log.error("Failed to send notification to user {}: {}", receiverId, e.getMessage(), e);
-      // Don't throw exception here to avoid breaking the main flow
     }
+  }
+
+  // Overload with 3 parameters for backward compatibility
+  public void createAndSendNotification(String senderId, String receiverId, NotificationType type) {
+    createAndSendNotification(senderId, receiverId, type, generateMessage(senderId, type), null);
   }
 
   public void createAndSendNotification(
@@ -57,7 +54,6 @@ public class NotificationService {
     createAndSendNotification(senderId, receiverId, type, message, link, null);
   }
 
-  // ✅ NEW: Overload with data parameter
   public void createAndSendNotification(
       String senderId,
       String receiverId,
@@ -66,7 +62,6 @@ public class NotificationService {
       String link,
       String data) {
     try {
-      // Validate inputs
       if (senderId == null || receiverId == null || type == null) {
         log.warn(
             "Invalid notification parameters: senderId={}, receiverId={}, type={}",
@@ -76,13 +71,9 @@ public class NotificationService {
         return;
       }
 
-      // Don't send notification to self
       if (senderId.equals(receiverId)) {
         return;
       }
-
-      // ✅ NEW: Handle duplicate notifications - replace old with new
-      handleDuplicateNotification(senderId, receiverId, type);
 
       Notification notification =
           Notification.builder()
@@ -91,7 +82,7 @@ public class NotificationService {
               .type(type)
               .message(message)
               .link(link)
-              .data(data) // ✅ ADDED: Include data field
+              .data(data)
               .timestamp(LocalDateTime.now())
               .isRead(false)
               .build();
@@ -105,23 +96,12 @@ public class NotificationService {
           notificationMapper.toNotificationDTO(savedNotification, userMap);
       sendNotification(receiverId, notificationDTO);
 
-      log.info(
-          "Notification created and sent: type={}, sender={}, receiver={}",
-          type,
-          senderId,
-          receiverId);
     } catch (Exception e) {
       log.error("Failed to create and send notification: {}", e.getMessage(), e);
       throw new RuntimeException("Failed to create and send notification", e);
     }
   }
 
-  // Overload for backward compatibility
-  public void createAndSendNotification(String senderId, String receiverId, NotificationType type) {
-    createAndSendNotification(senderId, receiverId, type, generateMessage(senderId, type), null);
-  }
-
-  // ✅ NEW: Paginated notifications with better performance
   public Page<NotificationDto> getNotificationsForUser(String receiverId, Pageable pageable) {
     try {
       if (receiverId == null || receiverId.trim().isEmpty()) {
@@ -136,7 +116,6 @@ public class NotificationService {
         return Page.empty(pageable);
       }
 
-      // Get unique sender IDs for efficient user fetching
       List<String> senderIds =
           notifications.getContent().stream()
               .map(Notification::getSender)
@@ -159,7 +138,6 @@ public class NotificationService {
     }
   }
 
-  // ✅ NEW: Get unread count for performance optimization
   public long getUnreadCount(String receiverId) {
     try {
       if (receiverId == null || receiverId.trim().isEmpty()) {
@@ -169,82 +147,20 @@ public class NotificationService {
       return count != null ? count : 0L;
     } catch (Exception e) {
       log.error("Failed to get unread count for user {}: {}", receiverId, e.getMessage(), e);
-      return 0L; // Return 0 instead of throwing to avoid breaking UI
-    }
-  }
-
-  // ✅ NEW: Get unread count by type
-  public long getUnreadCountByType(String receiverId, NotificationType type) {
-    try {
-      if (receiverId == null || receiverId.trim().isEmpty() || type == null) {
-        return 0L;
-      }
-      Long count = notificationRepository.countByReceiverAndTypeAndIsReadFalse(receiverId, type);
-      return count != null ? count : 0L;
-    } catch (Exception e) {
-      log.error(
-          "Failed to get unread count by type for user {}: {}", receiverId, e.getMessage(), e);
       return 0L;
     }
   }
 
-  // ✅ NEW: Backward compatibility method
   public List<NotificationDto> getNotificationsForUser(String receiverId) {
     try {
       Page<NotificationDto> page =
           getNotificationsForUser(
-              receiverId, org.springframework.data.domain.PageRequest.of(0, 50)); // Default limit
+              receiverId, org.springframework.data.domain.PageRequest.of(0, 50));
       return page.getContent();
     } catch (Exception e) {
       log.error("Failed to get notifications for user {}: {}", receiverId, e.getMessage(), e);
       return List.of();
     }
-  }
-
-  private void handleFollowOrLikeNotification(
-      String senderId, String receiverId, NotificationType type) {
-    try {
-      Notification existing =
-          notificationRepository
-              .findTopBySenderAndReceiverAndTypeOrderByTimestampDesc(senderId, receiverId, type)
-              .orElse(null);
-
-      if (existing != null) {
-        if (type == NotificationType.FOLLOW) {
-          LocalDateTime now = LocalDateTime.now();
-          LocalDateTime lastSentTime = existing.getTimestamp();
-
-          if (lastSentTime.isAfter(now.minusMinutes(1))) {
-            log.debug("Skipping follow notification - too recent for user: {}", receiverId);
-            return;
-          }
-        }
-
-        notificationRepository.deleteBySenderAndReceiverAndType(senderId, receiverId, type);
-      }
-
-      if (type == NotificationType.FOLLOW) {
-        new Thread(
-                () -> {
-                  try {
-                    Thread.sleep(3000);
-                    sendNewNotification(senderId, receiverId, type);
-                  } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    log.warn("Follow notification thread interrupted");
-                  }
-                })
-            .start();
-      } else {
-        sendNewNotification(senderId, receiverId, type);
-      }
-    } catch (Exception e) {
-      log.error("Failed to handle follow/like notification: {}", e.getMessage(), e);
-    }
-  }
-
-  private void sendNewNotification(String senderId, String receiverId, NotificationType type) {
-    createAndSendNotification(senderId, receiverId, type, generateMessage(senderId, type), null);
   }
 
   public void markAllAsRead(String receiverId) {
@@ -256,10 +172,9 @@ public class NotificationService {
 
       List<Notification> notifications =
           notificationRepository.findByReceiverOrderByTimestampDesc(receiverId);
-      notifications.forEach(notification -> notification.setRead(true));
+      notifications.forEach(notification -> notification.setIsRead(true));
       notificationRepository.saveAll(notifications);
 
-      log.info("Marked all notifications as read for user: {}", receiverId);
     } catch (Exception e) {
       log.error(
           "Failed to mark all notifications as read for user {}: {}",
@@ -285,16 +200,14 @@ public class NotificationService {
               .findById(notificationId)
               .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
 
-      // Verify the notification belongs to the user
       if (!notification.getReceiver().equals(receiverId)) {
         log.warn("Notification {} does not belong to user {}", notificationId, receiverId);
         throw new IllegalArgumentException("Notification does not belong to user");
       }
 
-      notification.setRead(true);
+      notification.setIsRead(true);
       notificationRepository.save(notification);
 
-      log.debug("Marked notification {} as read for user: {}", notificationId, receiverId);
     } catch (Exception e) {
       log.error(
           "Failed to mark notification {} as read for user {}: {}",
@@ -306,6 +219,7 @@ public class NotificationService {
     }
   }
 
+  // Helper method to generate default messages
   private String generateMessage(String senderId, NotificationType type) {
     return switch (type) {
       case FOLLOW -> senderId + " is following you.";
@@ -318,28 +232,24 @@ public class NotificationService {
     };
   }
 
-  // ✅ NEW: Handle duplicate notifications - replace old with new
-  private void handleDuplicateNotification(
-      String senderId, String receiverId, NotificationType type) {
+  // Send real-time report count update
+  public void sendReportCountUpdate(String userId, int reportCount) {
     try {
-      // Find existing notification of the same type from the same sender
-      Notification existing =
-          notificationRepository
-              .findTopBySenderAndReceiverAndTypeOrderByTimestampDesc(senderId, receiverId, type)
-              .orElse(null);
+      NotificationDto reportCountNotification =
+          NotificationDto.builder()
+              .id("REPORT_COUNT_" + System.currentTimeMillis())
+              .type(NotificationType.SYSTEM)
+              .message("Your report count has been updated to: " + reportCount)
+              .timestamp(LocalDateTime.now())
+              .isRead(false)
+              .data("{\"type\":\"reportCountUpdate\",\"reportCount\":" + reportCount + "}")
+              .build();
 
-      if (existing != null) {
-        // Delete the old notification to replace with new one
-        notificationRepository.deleteBySenderAndReceiverAndType(senderId, receiverId, type);
-        log.debug(
-            "Deleted duplicate notification: type={}, sender={}, receiver={}",
-            type,
-            senderId,
-            receiverId);
-      }
+      simpMessagingTemplate.convertAndSend(
+          "/user/" + userId + "/queue/reportCount", reportCountNotification);
+
     } catch (Exception e) {
-      log.error("Failed to handle duplicate notification: {}", e.getMessage(), e);
-      // Don't throw exception to avoid breaking the main flow
+      log.error("Failed to send report count update to user {}: {}", userId, e.getMessage(), e);
     }
   }
 }

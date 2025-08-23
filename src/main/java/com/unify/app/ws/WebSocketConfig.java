@@ -68,18 +68,39 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         Exception exception) {}
 
     private String extractToken(ServerHttpRequest request) {
-      // Check header
+      // Check Authorization header first
       List<String> authHeaders = request.getHeaders().get("Authorization");
       if (authHeaders != null && !authHeaders.isEmpty()) {
-        return authHeaders.get(0).replace("Bearer ", "");
+        String authHeader = authHeaders.get(0);
+        if (authHeader.startsWith("Bearer ")) {
+          return authHeader.substring(7); // Remove "Bearer " prefix
+        }
+        return authHeader; // Return as-is if no Bearer prefix
       }
 
-      // Check query param
+      // Check for token in query parameters
       String query = request.getURI().getQuery();
       if (query != null) {
         for (String param : query.split("&")) {
-          if (param.startsWith("token=")) return param.split("=")[1];
+          if (param.startsWith("token=")) {
+            String token = param.split("=")[1];
+            // Remove Bearer prefix if present
+            if (token.startsWith("Bearer%20")) {
+              return token.substring(8); // Remove "Bearer%20" (URL encoded)
+            }
+            return token;
+          }
         }
+      }
+
+      // Check for token in custom headers (for SockJS)
+      List<String> tokenHeaders = request.getHeaders().get("token");
+      if (tokenHeaders != null && !tokenHeaders.isEmpty()) {
+        String token = tokenHeaders.get(0);
+        if (token.startsWith("Bearer ")) {
+          return token.substring(7);
+        }
+        return token;
       }
 
       return null;
