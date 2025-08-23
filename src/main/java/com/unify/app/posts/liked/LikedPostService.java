@@ -63,12 +63,16 @@ public class LikedPostService {
       String postOwnerId = likedPost.getPost().getUser().getId();
       if (!request.userId().equals(postOwnerId)) {
         try {
+          // ✅ FIX: Include postId in data field for proper frontend handling
+          String data = String.format("{\"postId\":\"%s\"}", request.postId());
+          
           notificationService.createAndSendNotification(
               request.userId(),
               postOwnerId,
               NotificationType.LIKE,
               null, // Use default message
-              "/posts/" + request.postId() // Link to the post
+              "/posts/" + request.postId(), // Link to the post
+              data // Include postId in data field
               );
 
         } catch (Exception e) {

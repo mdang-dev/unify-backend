@@ -1,7 +1,6 @@
 package com.unify.app.hashtags.domain;
 
 import com.unify.app.posts.domain.Post;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
