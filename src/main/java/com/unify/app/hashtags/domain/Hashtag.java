@@ -1,13 +1,12 @@
 package com.unify.app.hashtags.domain;
 
+import java.io.Serializable;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import java.io.Serializable;
-import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,7 +29,4 @@ class Hashtag implements Serializable {
   String id;
 
   String content;
-
-  @OneToMany(mappedBy = "hashtag")
-  Set<HashtagDetail> hashtagDetails;
 }

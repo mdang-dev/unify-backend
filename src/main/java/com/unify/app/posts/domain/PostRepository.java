@@ -378,4 +378,38 @@ interface PostRepository extends JpaRepository<Post, String> {
       @Param("commentCount") Long commentCount,
       @Param("commentCountOperator") String commentCountOperator,
       Pageable pageable);
+
+  @Query(
+      value =
+          """
+                SELECT DISTINCT p.id, p.captions, p.status, p.audience, p.posted_at,
+                       p.is_comment_visible, p.is_like_visible, p.updated_at, p.user_id,
+                       u.first_name, u.last_name, u.user_name, COALESCE(COUNT(c.id), 0) as comment_count
+                FROM Posts p
+                INNER JOIN users u ON p.user_id = u.id
+                LEFT JOIN comments c ON p.id = c.post_id AND c.status = 0
+                INNER JOIN hashtag_details hd ON p.id = hd.post_id
+                INNER JOIN Hashtags h ON hd.hashtag_id = h.id
+                WHERE LOWER(h.content) = LOWER(:hashtag)
+                AND p.status = 1
+                AND u.status = 0
+                GROUP BY p.id, p.captions, p.status, p.audience, p.posted_at,
+                         p.is_comment_visible, p.is_like_visible, p.updated_at, p.user_id,
+                         u.first_name, u.last_name, u.user_name
+                ORDER BY p.posted_at DESC
+                LIMIT :#{#pageable.pageSize} OFFSET :#{#pageable.offset}
+            """,
+      countQuery =
+          """
+                SELECT COUNT(DISTINCT p.id) FROM Posts p
+                INNER JOIN users u ON p.user_id = u.id
+                INNER JOIN hashtag_details hd ON p.id = hd.post_id
+                INNER JOIN Hashtags h ON hd.hashtag_id = h.id
+                WHERE LOWER(h.content) = LOWER(:hashtag)
+                AND p.status = 1
+                AND u.status = 0
+            """,
+      nativeQuery = true)
+  Page<Object[]> findPostsByHashtagWithPagination(
+      @Param("hashtag") String hashtag, Pageable pageable);
 }
