@@ -13,7 +13,8 @@ public record MessageDto(
     LocalDateTime timestamp,
     List<String> fileUrls,
     MessageType type,
-    String clientTempId) {
+    String clientTempId,
+     String replyToMessageId) {
 
   public static MessageDto withCurrentTimestamp(MessageDto message) {
     // Ensure a server-generated id exists to keep ordering stable across clients
@@ -36,6 +37,7 @@ public record MessageDto(
         finalTimestamp, // ✅ Always use server Vietnam time for consistency
         message.fileUrls(),
         message.type(),
-        message.clientTempId());
+        message.clientTempId(),
+    message.replyToMessageId());
   }
 }

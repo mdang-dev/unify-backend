@@ -17,4 +17,5 @@ public class ChatDto implements Serializable {
   AvatarDto avatar;
   String lastMessage;
   LocalDateTime lastMessageTime;
+  String senderId;
 }
