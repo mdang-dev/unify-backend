@@ -1,8 +1,6 @@
 package com.unify.app.media.domain;
 
-import com.unify.app.media.domain.models.ConnectionResponse;
-import com.unify.app.media.domain.models.CreateIngressRequest;
-import com.unify.app.media.domain.models.StreamDto;
+import com.unify.app.media.domain.models.*;
 import com.unify.app.users.domain.User;
 import com.unify.app.users.domain.UserMapper;
 import com.unify.app.users.domain.UserService;
@@ -145,4 +143,60 @@ public class StreamService {
         .map(userMapper::toUserDTO)
         .collect(Collectors.toList());
   }
+
+    public void updateTitleAndThumbnail(String userId, StreamUpdateDto request) {
+        Stream stream = streamRepository.findByUserId(userId)
+                .orElseThrow(() -> new StreamNotFoundException("Stream not found for userId: " + userId));
+
+        if (request.title() != null) {
+            stream.setTitle(request.title());
+        }
+        if (request.thumbnailUrl() != null) {
+            stream.setThumbnailUrl(request.thumbnailUrl());
+        }
+
+        streamRepository.save(stream);
+    }
+
+    public StreamChatSettingsDto getSettings(String userId) {
+        Stream stream = streamRepository.findByUserId(userId)
+                .orElseThrow(() -> new StreamNotFoundException("Stream not found for userId: " + userId));
+        return  new StreamChatSettingsDto(stream.getIsChatEnabled(), stream.getIsChatDelayed(), stream.getIsChatFollowersOnly());
+    }
+
+    public void updateChatSettings(String userId, StreamChatSettingsDto request) {
+        Stream stream = streamRepository.findByUserId(userId)
+                .orElseThrow(() -> new StreamNotFoundException("Stream not found for userId: " + userId));
+
+        if (request.isChatEnabled() != null) {
+            stream.setIsChatEnabled(request.isChatEnabled());
+        }
+        if (request.isChatDelayed() != null) {
+            stream.setIsChatDelayed(request.isChatDelayed());
+        }
+        if (request.isChatFollowersOnly() != null) {
+            stream.setIsChatFollowersOnly(request.isChatFollowersOnly());
+        }
+
+        streamRepository.save(stream);
+    }
+
+    public  boolean getLiveStatus(String userId){
+        Stream stream = streamRepository.findByUserId(userId)
+                .orElseThrow(() -> new StreamNotFoundException("Stream not found for userId: " + userId));
+        return  stream.getIsLive();
+    }
+
+    public String getUserIdByIngressId(String ingressId) {
+        Stream stream = streamRepository.findByIngressId(ingressId)
+                .orElseThrow(() -> new StreamNotFoundException("Stream not found for ingressId: " + ingressId));
+        return stream.getUser().getId();
+    }
+
+    public StreamUpdateDto getStreamInfo(String userId) {
+        Stream stream = streamRepository.findByUserId(userId)
+                .orElseThrow(() -> new StreamNotFoundException("Stream not found for userId: " + userId));
+        return  new StreamUpdateDto(stream.getTitle(), stream.getThumbnailUrl());
+    }
+
 }

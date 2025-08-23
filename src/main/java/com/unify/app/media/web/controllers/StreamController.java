@@ -1,23 +1,13 @@
 package com.unify.app.media.web.controllers;
 
 import com.unify.app.media.domain.StreamService;
-import com.unify.app.media.domain.models.ConnectionResponse;
-import com.unify.app.media.domain.models.CreateIngressRequest;
-import com.unify.app.media.domain.models.CreateStreamRequest;
-import com.unify.app.media.domain.models.StreamDto;
-import com.unify.app.media.domain.models.ViewerTokenRequest;
+import com.unify.app.media.domain.models.*;
 import com.unify.app.users.domain.models.TokenResponse;
 import com.unify.app.users.domain.models.UserDto;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/streams")
@@ -76,4 +66,44 @@ public class StreamController {
   public ResponseEntity<StreamDto> getStream(@PathVariable String roomId) {
     return ResponseEntity.ok(streamService.getStreamByRoomId(roomId));
   }
+
+    @GetMapping("/user/{userId}/chat-settings")
+    public ResponseEntity<StreamChatSettingsDto> updateChatSettings(
+            @PathVariable String userId
+    ) {
+        return  ResponseEntity.ok(streamService.getSettings(userId));
+    }
+
+    @GetMapping("/user/{userId}/live-status")
+    public ResponseEntity<Boolean> getLiveStatus(
+            @PathVariable String userId
+    ) {
+        return  ResponseEntity.ok(streamService.getLiveStatus(userId));
+    }
+
+    @PutMapping("/user/{userId}/details")
+    public ResponseEntity<Void> updateTitleAndThumbnail(
+            @PathVariable String userId,
+            @RequestBody StreamUpdateDto request
+    ) {
+        streamService.updateTitleAndThumbnail(userId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/user/{userId}/get-details")
+    public ResponseEntity<StreamUpdateDto> getTitleAndThumbnail(
+            @PathVariable String userId
+    ) {
+        return ResponseEntity.ok(streamService.getStreamInfo(userId));
+    }
+
+
+    @PutMapping("/user/{userId}/chat-settings")
+    public ResponseEntity<Void> updateChatSettings(
+            @PathVariable String userId,
+            @RequestBody StreamChatSettingsDto request
+    ) {
+        streamService.updateChatSettings(userId, request);
+        return ResponseEntity.ok().build();
+    }
 }
