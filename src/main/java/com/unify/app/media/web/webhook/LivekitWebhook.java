@@ -1,8 +1,10 @@
 package com.unify.app.media.web.webhook;
 
 import com.unify.app.ApplicationProperties;
+import com.unify.app.followers.domain.FollowService;
 import com.unify.app.media.domain.StreamService;
 import com.unify.app.media.domain.models.StreamEvent;
+import com.unify.app.users.domain.models.UserDto;
 import io.livekit.server.WebhookReceiver;
 import io.swagger.v3.oas.annotations.Hidden;
 import livekit.LivekitWebhook.WebhookEvent;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @Hidden
 @RestController
 @RequestMapping("/webhooks/livekit")
@@ -26,6 +30,7 @@ class LivekitWebhook {
   private final ApplicationProperties properties;
   private final StreamService streamService;
   private final SimpMessagingTemplate messagingTemplate;
+  private  final FollowService followService;
 
   @PostMapping
   public ResponseEntity<Void> handleLivekitWebhook(
@@ -42,14 +47,10 @@ class LivekitWebhook {
     WebhookEvent event = receiver.receive(body, authorization);
 
     if ("ingress_ended".equals(event.getEvent()) && event.hasIngressInfo()) {
-        String userId = streamService.getUserIdByIngressId(event.getIngressInfo().getIngressId());
-        messagingTemplate.convertAndSend("/topic/"  + userId + "/streams", new StreamEvent(false) );
-      streamService.updateIsLiveStream(event.getIngressInfo().getIngressId(), false);
+       streamService.updateIsLiveStream(event.getIngressInfo().getIngressId(), false);
     }
 
     if ("ingress_started".equals(event.getEvent()) && event.hasIngressInfo()) {
-        String userId = streamService.getUserIdByIngressId(event.getIngressInfo().getIngressId());
-        messagingTemplate.convertAndSend("/topic/"  + userId + "/streams", new StreamEvent(true) );
       streamService.updateIsLiveStream(event.getIngressInfo().getIngressId(), true);
     }
 

@@ -39,4 +39,8 @@ interface FollowRepository extends JpaRepository<Follower, FollowerUserId> {
                         )
                         """)
   List<User> findMutualFollowingUsers(@Param("myId") String myId);
+
+    // Get all users who follow a given user
+    @Query("SELECT fo.userFollower FROM Follower fo WHERE fo.userFollowing.id = :currentUserId")
+    List<User> findAllFollowersByUserId(@Param("currentUserId") String currentUserId);
 }

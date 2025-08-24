@@ -1,10 +1,6 @@
 package com.unify.app.users.domain;
 
-import com.unify.app.users.domain.models.AvatarDto;
-import com.unify.app.users.domain.models.EditProfileDto;
-import com.unify.app.users.domain.models.ShareAbleUserDto;
-import com.unify.app.users.domain.models.UserDto;
-import com.unify.app.users.domain.models.UserReportCountDto;
+import com.unify.app.users.domain.models.*;
 import com.unify.app.users.domain.models.auth.CreateUserCmd;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -536,6 +532,11 @@ public class UserService {
         userRepository.findUsersByFilterWithPagination(
             birthDay, email, status, username, firstName, lastName, pageable);
     return userPage.map(userMapper::toUserDTO);
+  }
+
+  public UserWithStreamDto getUserWithStreamByUserName(String username) {
+      User user = this.findUserByUsername(username);
+      return  userMapper.toWithStreamDto(user);
   }
 
   private String encryptPassword(String password) {

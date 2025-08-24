@@ -12,6 +12,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -155,6 +158,10 @@ public class StreamService {
             stream.setThumbnailUrl(request.thumbnailUrl());
         }
 
+        if(request.description() != null) {
+            stream.setDescription(request.description());
+        }
+
         streamRepository.save(stream);
     }
 
@@ -164,7 +171,7 @@ public class StreamService {
         return  new StreamChatSettingsDto(stream.getIsChatEnabled(), stream.getIsChatDelayed(), stream.getIsChatFollowersOnly());
     }
 
-    public void updateChatSettings(String userId, StreamChatSettingsDto request) {
+    public Stream updateChatSettings(String userId, StreamChatSettingsDto request) {
         Stream stream = streamRepository.findByUserId(userId)
                 .orElseThrow(() -> new StreamNotFoundException("Stream not found for userId: " + userId));
 
@@ -178,7 +185,7 @@ public class StreamService {
             stream.setIsChatFollowersOnly(request.isChatFollowersOnly());
         }
 
-        streamRepository.save(stream);
+       return streamRepository.save(stream);
     }
 
     public  boolean getLiveStatus(String userId){
@@ -196,7 +203,24 @@ public class StreamService {
     public StreamUpdateDto getStreamInfo(String userId) {
         Stream stream = streamRepository.findByUserId(userId)
                 .orElseThrow(() -> new StreamNotFoundException("Stream not found for userId: " + userId));
-        return  new StreamUpdateDto(stream.getTitle(), stream.getThumbnailUrl());
+        return  new StreamUpdateDto(stream.getTitle(), stream.getThumbnailUrl(),  stream.getDescription());
+    }
+
+    public Page<StreamDto> getLiveStreams(String viewerId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        return streamRepository.findLiveStreamsWithFollowPriorityAndRandomNonFollow(viewerId, pageable)
+                .map(stream -> {
+                    StreamDto dto = mapper.toDto(stream);
+                    dto.setUser(userMapper.toUserDTO(stream.getUser()));
+                    return dto;
+                });
+    }
+
+
+    public Page<UserLiveStatusDto> getFollowedUsersSortedByLive(String viewerId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+      return  streamRepository.findFollowedUsersWithLivePriority(viewerId, pageable);
     }
 
 }
