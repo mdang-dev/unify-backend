@@ -1,11 +1,7 @@
 package com.unify.app.users.web;
 
 import com.unify.app.users.domain.UserService;
-import com.unify.app.users.domain.models.EditProfileDto;
-import com.unify.app.users.domain.models.ShareAbleUserDto;
-import com.unify.app.users.domain.models.UserDto;
-import com.unify.app.users.domain.models.UserPagedResponse;
-import com.unify.app.users.domain.models.UserReportCountDto;
+import com.unify.app.users.domain.models.*;
 import com.unify.app.users.domain.models.auth.CreateUserCmd;
 import java.time.LocalDate;
 import java.util.Collections;
@@ -182,4 +178,10 @@ class UserController {
     userService.clearUserCache(id);
     return ResponseEntity.ok("User cache cleared successfully!");
   }
+
+  @GetMapping("/user-stream/{username}")
+    ResponseEntity<UserWithStreamDto> getUserWithStream(@PathVariable String username) {
+      return  ResponseEntity.ok(userService.getUserWithStreamByUserName(username));
+  }
+
 }

@@ -7,10 +7,16 @@ import com.unify.app.notifications.domain.NotificationService;
 import com.unify.app.notifications.domain.models.NotificationType;
 import com.unify.app.security.SecurityService;
 import com.unify.app.users.domain.User;
+import com.unify.app.users.domain.UserMapper;
 import com.unify.app.users.domain.UserService;
+import com.unify.app.users.domain.models.UserDto;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
+<<<<<<< HEAD
+=======
+
+>>>>>>> a33e15a (feat(media): handle update stream and get list)
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +29,7 @@ public class FollowService {
   private final SecurityService securityService;
   private final NotificationService notificationService;
   private final FriendshipRepository friendshipRepository;
+  private final  UserMapper userMapper;
 
   private void updateFriendshipStatus(String userId1, String userId2) {
     // Ensure consistent ordering of user IDs to avoid duplicate friendships
@@ -159,4 +166,8 @@ public class FollowService {
   public List<User> getFriends(String userId) {
     return userService.getFriendsNative(userId);
   }
+  public List<UserDto> getAllUsersFollowersByUserId(String currentUserId) {
+      return  followRepository.findAllFollowersByUserId(currentUserId).stream().map(userMapper::toUserDTO).toList();
+  }
+
 }

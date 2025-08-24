@@ -1,18 +1,24 @@
 package com.unify.app.media.web.webhook;
 
 import com.unify.app.ApplicationProperties;
+import com.unify.app.followers.domain.FollowService;
 import com.unify.app.media.domain.StreamService;
+import com.unify.app.media.domain.models.StreamEvent;
+import com.unify.app.users.domain.models.UserDto;
 import io.livekit.server.WebhookReceiver;
 import io.swagger.v3.oas.annotations.Hidden;
 import livekit.LivekitWebhook.WebhookEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @Hidden
 @RestController
@@ -23,9 +29,11 @@ class LivekitWebhook {
 
   private final ApplicationProperties properties;
   private final StreamService streamService;
+  private final SimpMessagingTemplate messagingTemplate;
+  private  final FollowService followService;
 
   @PostMapping
-  public ResponseEntity<Void> handlelivekitWebhook(
+  public ResponseEntity<Void> handleLivekitWebhook(
       @RequestBody String body,
       @RequestHeader(value = "Authorization", required = false) String authorization) {
 
@@ -39,7 +47,7 @@ class LivekitWebhook {
     WebhookEvent event = receiver.receive(body, authorization);
 
     if ("ingress_ended".equals(event.getEvent()) && event.hasIngressInfo()) {
-      streamService.updateIsLiveStream(event.getIngressInfo().getIngressId(), false);
+       streamService.updateIsLiveStream(event.getIngressInfo().getIngressId(), false);
     }
 
     if ("ingress_started".equals(event.getEvent()) && event.hasIngressInfo()) {

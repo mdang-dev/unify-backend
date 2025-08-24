@@ -1,23 +1,17 @@
 package com.unify.app.media.web.controllers;
 
+import com.unify.app.common.models.PagedResult;
+import com.unify.app.media.domain.Stream;
 import com.unify.app.media.domain.StreamService;
-import com.unify.app.media.domain.models.ConnectionResponse;
-import com.unify.app.media.domain.models.CreateIngressRequest;
-import com.unify.app.media.domain.models.CreateStreamRequest;
-import com.unify.app.media.domain.models.StreamDto;
-import com.unify.app.media.domain.models.ViewerTokenRequest;
+import com.unify.app.media.domain.models.*;
 import com.unify.app.users.domain.models.TokenResponse;
 import com.unify.app.users.domain.models.UserDto;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/streams")
@@ -25,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class StreamController {
 
   private final StreamService streamService;
+  private final SimpMessagingTemplate messagingTemplate;
 
   @PostMapping("/create")
   public ResponseEntity<StreamDto> createStream(@RequestBody CreateStreamRequest request) {
@@ -67,13 +62,70 @@ public class StreamController {
     return ResponseEntity.ok(streamService.endStream(roomId));
   }
 
-  @GetMapping("/live")
-  public ResponseEntity<List<StreamDto>> getLiveStreams() {
-    return ResponseEntity.ok(streamService.getLiveStreams());
-  }
-
   @GetMapping("/{roomId}")
   public ResponseEntity<StreamDto> getStream(@PathVariable String roomId) {
     return ResponseEntity.ok(streamService.getStreamByRoomId(roomId));
   }
+
+    @GetMapping("/user/{userId}/chat-settings")
+    public ResponseEntity<StreamChatSettingsDto> updateChatSettings(
+            @PathVariable String userId
+    ) {
+        return  ResponseEntity.ok(streamService.getSettings(userId));
+    }
+
+    @GetMapping("/user/{userId}/live-status")
+    public ResponseEntity<Boolean> getLiveStatus(
+            @PathVariable String userId
+    ) {
+        return  ResponseEntity.ok(streamService.getLiveStatus(userId));
+    }
+
+    @PutMapping("/user/{userId}/details")
+    public ResponseEntity<Void> updateTitleAndThumbnail(
+            @PathVariable String userId,
+            @RequestBody StreamUpdateDto request
+    ) {
+        streamService.updateTitleAndThumbnail(userId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/user/{userId}/get-details")
+    public ResponseEntity<StreamUpdateDto> getTitleAndThumbnail(
+            @PathVariable String userId
+    ) {
+        return ResponseEntity.ok(streamService.getStreamInfo(userId));
+    }
+
+
+    @PutMapping("/user/{userId}/chat-settings")
+    public ResponseEntity<Void> updateChatSettings(
+            @PathVariable String userId,
+            @RequestBody StreamChatSettingsDto request
+    ) {
+        Stream stream = streamService.updateChatSettings(userId, request);
+        ChatSettingsUpdateDto payload = new ChatSettingsUpdateDto("CHAT_SETTINGS_UPDATE", new ChatSettingsDto(stream.getIsChatEnabled(), stream.getIsChatDelayed(), stream.getIsChatFollowersOnly()));
+        messagingTemplate.convertAndSend("/topic/streams/" + stream.getId()  + "/settings", payload);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/live")
+    public ResponseEntity<PagedResult<StreamDto>> getLiveStreams(
+            @RequestParam String viewerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<StreamDto> streams = streamService.getLiveStreams(viewerId, page, size);
+        return ResponseEntity.ok(new PagedResult<>(streams));
+    }
+
+    @GetMapping("/followed-users")
+    public ResponseEntity<PagedResult<UserLiveStatusDto>> getFollowedUsers(
+            @RequestParam String viewerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<UserLiveStatusDto> users = streamService.getFollowedUsersSortedByLive(viewerId, page, size);
+        return ResponseEntity.ok(new PagedResult<>(users));
+    }
 }
