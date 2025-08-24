@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account Suspended</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f6f8fa; margin: 0; padding: 0; }
+        .container { max-width: 520px; margin: 24px auto; background: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); overflow: hidden; }
+        .header { background: #ffc107; color: #000000; padding: 16px 24px; font-size: 18px; font-weight: 600; }
+        .content { padding: 24px; color: #24292e; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 16px; margin: 16px 0; }
+        .footer { padding: 16px 24px; color: #6a737d; font-size: 12px; border-top: 1px solid #f0f1f3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Account Temporarily Suspended</div>
+        <div class="content">
+            <p>Dear ${USER_NAME},</p>
+            <p>Your account has been temporarily suspended due to ${REPORT_COUNT} approved reports.</p>
+
+            <div class="warning">
+                <strong>What this means:</strong><br>
+                • Your account is temporarily inaccessible<br>
+                • This suspension will be reviewed by our team<br>
+                • You may appeal this decision
+            </div>
+
+            <p>Please review our community guidelines and ensure future content complies with our standards.</p>
+
+            <p>If you have any questions or wish to appeal this suspension, please contact our support team.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; ${YEAR} Unify. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

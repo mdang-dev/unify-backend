@@ -499,6 +499,14 @@ public class UserService {
         .collect(Collectors.toList());
   }
 
+  public List<User> getFriendsNative(String currentUserId) {
+    UserDto userDTO = findById(currentUserId);
+    if (userDTO == null) {
+      return Collections.emptyList();
+    }
+    return userRepository.findFriendsByUserId(userDTO.id());
+  }
+
   public List<ShareAbleUserDto> getMutualFollowers(String myId) {
     List<User> mutualUsers = userRepository.findMutualFollowingUsers(myId);
     return mutualUsers.stream()
