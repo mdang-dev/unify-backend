@@ -70,7 +70,7 @@ public class ApacheMailService {
       }
       // Set UTF-8 encoding for proper character support
       email.setCharset("UTF-8");
-      
+
       email.setFrom(username);
       email.setSubject(subject);
       email.setHtmlMsg(finalForm);
@@ -106,7 +106,7 @@ public class ApacheMailService {
 
       // Set UTF-8 encoding for proper character support
       email.setCharset("UTF-8");
-      
+
       email.setFrom(username);
       email.setSubject(subject);
       email.setHtmlMsg(htmlContent);

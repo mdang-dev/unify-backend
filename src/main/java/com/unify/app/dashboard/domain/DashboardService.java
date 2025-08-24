@@ -57,11 +57,16 @@ public class DashboardService {
     Long newActiveUsersThisMonth =
         dashboardRepository.getNewActiveUsersThisMonth(currentMonthStart);
 
-    // Calculate growth percentages using formula: [(b)/(a)]*100
+    // Calculate growth percentages using formula: ((current - last) / last) * 100
     Double userGrowthPercent = calculateGrowthPercent(totalUsersLastMonth, newUsersThisMonth);
     Double postGrowthPercent = calculateGrowthPercent(totalPostsLastMonth, newPostsThisMonth);
     Double activeUserGrowthPercent =
         calculateGrowthPercent(activeUsersLastMonth, newActiveUsersThisMonth);
+
+    // Calculate differences (current - last)
+    Long userDifference = newUsersThisMonth - totalUsersLastMonth;
+    Long postDifference = newPostsThisMonth - totalPostsLastMonth;
+    Long activeUserDifference = newActiveUsersThisMonth - activeUsersLastMonth;
 
     return DashboardStatsDto.builder()
         .totalUsers(totalUsers)
@@ -71,6 +76,9 @@ public class DashboardService {
         .userGrowthPercent(userGrowthPercent)
         .postGrowthPercent(postGrowthPercent)
         .activeUserGrowthPercent(activeUserGrowthPercent)
+        .userDifference(userDifference)
+        .postDifference(postDifference)
+        .activeUserDifference(activeUserDifference)
         .newReportsToday(newReportsToday)
         .build();
   }
@@ -80,7 +88,7 @@ public class DashboardService {
       return currentValue > 0 ? 100.0 : 0.0;
     }
 
-    double growth = ((double) (currentValue) / (lastMonthValue + currentValue)) * 100;
+    double growth = ((double) (currentValue - lastMonthValue) / lastMonthValue) * 100;
     return Math.round(growth * 10.0) / 10.0; // Round to 1 decimal place
   }
 
