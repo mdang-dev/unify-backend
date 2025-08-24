@@ -29,16 +29,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   public void registerStompEndpoints(StompEndpointRegistry registry) {
     registry
         .addEndpoint("/ws")
-        .setAllowedOrigins( "http://localhost:3000",
-                "http://localhost:3001",
-                "https://unify.qzz.io",
-                "https://*.unify.qzz.io",
-                "https://unify.id.vn",
-                "https://*.unify.id.vn")
+        .setAllowedOrigins(
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "https://unify.qzz.io",
+            "https://*.unify.qzz.io",
+            "https://unify.id.vn",
+            "https://*.unify.id.vn")
         .addInterceptors(new AuthHandshakeInterceptor())
         .withSockJS()
-            .setSuppressCors(false)
-            .setSessionCookieNeeded(false);
+        .setSuppressCors(false)
+        .setSessionCookieNeeded(false);
   }
 
   @Override
@@ -69,9 +70,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void afterHandshake(
-        @NonNull  ServerHttpRequest request,
-       @NonNull ServerHttpResponse response,
-        @NonNull  WebSocketHandler wsHandler,
+        @NonNull ServerHttpRequest request,
+        @NonNull ServerHttpResponse response,
+        @NonNull WebSocketHandler wsHandler,
         Exception exception) {}
 
     private String extractToken(ServerHttpRequest request) {

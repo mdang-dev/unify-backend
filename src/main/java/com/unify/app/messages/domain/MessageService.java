@@ -117,10 +117,10 @@ public class MessageService {
                     return latestMessage.getTimestamp();
                   }
 
-                    @Override
-                    public String getLastMessageSender() {
-                        return latestMessage.getSender();
-                    }
+                  @Override
+                  public String getLastMessageSender() {
+                    return latestMessage.getSender();
+                  }
                 };
               })
           .filter(chat -> chat != null)
@@ -153,41 +153,39 @@ public class MessageService {
     }
   }
 
-    private ChatDto buildChatDto(ChatPreviewProjection chat) {
-        if (chat == null) return null;
+  private ChatDto buildChatDto(ChatPreviewProjection chat) {
+    if (chat == null) return null;
 
-        String otherUserId = chat.get_id();
-        if (otherUserId == null || otherUserId.trim().isEmpty()) return null;
+    String otherUserId = chat.get_id();
+    if (otherUserId == null || otherUserId.trim().isEmpty()) return null;
 
-        try {
-            UserDto user = getUserDataWithFallback(otherUserId);
+    try {
+      UserDto user = getUserDataWithFallback(otherUserId);
 
+      return ChatDto.builder()
+          .userId(user != null ? user.id() : otherUserId)
+          .username(user != null ? safeString(user.username()) : "Unknown User")
+          .fullName(user != null ? buildFullName(user) : "Unknown User")
+          .avatar(user != null ? user.avatar() : null)
+          .lastMessage(safeString(chat.getLastMessage()))
+          .lastMessageTime(chat.getLastMessageTime())
+          .senderId(chat.getLastMessageSender())
+          .build();
 
-            return ChatDto.builder()
-                    .userId(user != null ? user.id() : otherUserId)
-                    .username(user != null ? safeString(user.username()) : "Unknown User")
-                    .fullName(user != null ? buildFullName(user) : "Unknown User")
-                    .avatar(user != null ? user.avatar() : null)
-                    .lastMessage(safeString(chat.getLastMessage()))
-                    .lastMessageTime(chat.getLastMessageTime())
-                    .senderId(chat.getLastMessageSender())
-                    .build();
-
-        } catch (Exception e) {
-            return ChatDto.builder()
-                    .userId(otherUserId)
-                    .username("Unknown User")
-                    .fullName("Unknown User")
-                    .avatar(null)
-                    .lastMessage(safeString(chat.getLastMessage()))
-                    .lastMessageTime(chat.getLastMessageTime())
-                    .senderId(chat.getLastMessageSender()) // fallback
-                    .build();
-        }
+    } catch (Exception e) {
+      return ChatDto.builder()
+          .userId(otherUserId)
+          .username("Unknown User")
+          .fullName("Unknown User")
+          .avatar(null)
+          .lastMessage(safeString(chat.getLastMessage()))
+          .lastMessageTime(chat.getLastMessageTime())
+          .senderId(chat.getLastMessageSender()) // fallback
+          .build();
     }
+  }
 
-
-    private UserDto getUserDataWithFallback(String userId) {
+  private UserDto getUserDataWithFallback(String userId) {
     try {
       return userService.findByIdSafe(userId);
     } catch (Exception e) {
