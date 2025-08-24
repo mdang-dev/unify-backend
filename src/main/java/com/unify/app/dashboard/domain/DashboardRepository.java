@@ -68,7 +68,7 @@ public class DashboardRepository {
 
   // Get total pending reports count (status = 1)
   public Long getTotalPendingReports() {
-    Query query = entityManager.createQuery("SELECT COUNT(r) FROM Report r WHERE r.status = 1");
+    Query query = entityManager.createQuery("SELECT COUNT(r) FROM Report r WHERE r.status = 0");
     return (Long) query.getSingleResult();
   }
 
@@ -203,6 +203,7 @@ public class DashboardRepository {
                 + "LEFT JOIN Post p ON p.id = r.reportedId "
                 + "LEFT JOIN User u ON u.id = p.user.id "
                 + "WHERE r.entityType = 'POST' "
+                + "AND r.status = 0 "
                 + "GROUP BY r.reportedId, p.captions, u.firstName, u.lastName, u.id "
                 + "ORDER BY latestReportedAt DESC");
     return query.getResultList();
@@ -218,6 +219,7 @@ public class DashboardRepository {
                 + "FROM Report r "
                 + "LEFT JOIN User u ON u.id = r.reportedId "
                 + "WHERE r.entityType = 'USER' "
+                + "AND r.status = 0 "
                 + "GROUP BY r.reportedId, u.firstName, u.lastName, u.email, u.id "
                 + "ORDER BY latestReportedAt DESC");
     return query.getResultList();
@@ -235,6 +237,7 @@ public class DashboardRepository {
                 + "LEFT JOIN User u ON u.id = c.user.id "
                 + "LEFT JOIN Post p ON p.id = c.post.id "
                 + "WHERE r.entityType = 'COMMENT' "
+                + "AND r.status = 0 "
                 + "GROUP BY r.reportedId, c.content, u.firstName, u.lastName, u.id, p.captions "
                 + "ORDER BY latestReportedAt DESC");
     return query.getResultList();
@@ -246,7 +249,7 @@ public class DashboardRepository {
         entityManager.createQuery(
             "SELECT r.entityType, COUNT(r) as count "
                 + "FROM Report r "
-                + "WHERE r.status = 1 "
+                + "WHERE r.status = 0 "
                 + "GROUP BY r.entityType");
     return query.getResultList();
   }

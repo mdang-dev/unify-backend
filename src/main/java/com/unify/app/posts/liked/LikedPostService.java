@@ -65,7 +65,7 @@ public class LikedPostService {
         try {
           // ✅ FIX: Include postId in data field for proper frontend handling
           String data = String.format("{\"postId\":\"%s\"}", request.postId());
-          
+
           notificationService.createAndSendNotification(
               request.userId(),
               postOwnerId,
