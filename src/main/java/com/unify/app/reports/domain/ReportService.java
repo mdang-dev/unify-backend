@@ -4,6 +4,7 @@ import com.unify.app.comments.domain.Comment;
 import com.unify.app.comments.domain.CommentMapper;
 import com.unify.app.comments.domain.CommentService;
 import com.unify.app.notifications.domain.NotificationService;
+import com.unify.app.notifications.domain.ReportEmailService;
 import com.unify.app.notifications.domain.ReportNotificationService;
 import com.unify.app.posts.domain.Post;
 import com.unify.app.posts.domain.PostMapper;
@@ -41,6 +42,7 @@ public class ReportService {
   private final ReportImageRepository reportImageRepository;
   private final NotificationService notificationService;
   private final ReportNotificationService reportNotificationService;
+  private final ReportEmailService reportEmailService;
 
   public static final int PENDING = 0;
   public static final int APPROVED = 1;
@@ -385,6 +387,13 @@ public class ReportService {
             "SYSTEM", // System admin ID
             report.getAdminReason() // Admin reason
             );
+
+        // Send email notification to the post owner
+        reportEmailService.sendReportApprovedEmail(
+            post.getUser(),
+            report.getEntityType(),
+            report.getReportedId(),
+            report.getAdminReason());
       }
       case USER -> {
         User user = userService.findUserById(report.getReportedId());
@@ -400,15 +409,23 @@ public class ReportService {
             report.getAdminReason() // Admin reason
             );
 
+        // Send email notification to the reported user
+        reportEmailService.sendReportApprovedEmail(
+            user, report.getEntityType(), report.getReportedId(), report.getAdminReason());
+
         // Check thresholds and apply appropriate actions
         if (count >= 5) {
           user.setStatus(2); // Permanent ban
           // Send permanent ban notification
           reportNotificationService.sendAccountBannedNotification(user.getId(), count, "SYSTEM");
+          // Send email notification for permanent ban
+          reportEmailService.sendAccountBannedEmail(user, count);
         } else if (count >= 3 && user.getStatus() != 2) {
           user.setStatus(1); // Temporary ban
           // Send temporary ban notification
           reportNotificationService.sendAccountSuspendedNotification(user.getId(), count, "SYSTEM");
+          // Send email notification for temporary suspension
+          reportEmailService.sendAccountSuspendedEmail(user, count);
         }
 
         userService.update(user);
@@ -429,6 +446,13 @@ public class ReportService {
             "SYSTEM", // System admin ID
             report.getAdminReason() // Admin reason
             );
+
+        // Send email notification to the comment owner
+        reportEmailService.sendReportApprovedEmail(
+            comment.getUser(),
+            report.getEntityType(),
+            report.getReportedId(),
+            report.getAdminReason());
 
         // Hide all replies to this comment
         commentService

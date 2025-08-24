@@ -14,7 +14,7 @@ public record MessageDto(
     List<String> fileUrls,
     MessageType type,
     String clientTempId,
-     String replyToMessageId) {
+    String replyToMessageId) {
 
   public static MessageDto withCurrentTimestamp(MessageDto message) {
     // Ensure a server-generated id exists to keep ordering stable across clients
@@ -38,6 +38,6 @@ public record MessageDto(
         message.fileUrls(),
         message.type(),
         message.clientTempId(),
-    message.replyToMessageId());
+        message.replyToMessageId());
   }
 }
