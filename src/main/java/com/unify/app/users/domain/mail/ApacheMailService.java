@@ -68,6 +68,9 @@ public class ApacheMailService {
       } else {
         email.setStartTLSEnabled(true);
       }
+      // Set UTF-8 encoding for proper character support
+      email.setCharset("UTF-8");
+      
       email.setFrom(username);
       email.setSubject(subject);
       email.setHtmlMsg(finalForm);
@@ -76,6 +79,44 @@ public class ApacheMailService {
       log.info("OTP has been sent to {}", to);
     } catch (EmailException e) {
       log.error("Error sending email to {}: {}", to, e.getMessage());
+    }
+  }
+
+  /**
+   * Send report notification email with custom subject and HTML content
+   *
+   * @param to Recipient email address
+   * @param subject Email subject
+   * @param htmlContent HTML content of the email
+   */
+  @Async
+  public void sendReportNotificationEmail(String to, String subject, String htmlContent) {
+    try {
+      HtmlEmail email = new HtmlEmail();
+      email.setHostName(host);
+      email.setSmtpPort(port);
+      email.setAuthentication(username, password);
+
+      // Configure TLS/SSL depending on port
+      if (port == 465) {
+        email.setSSLOnConnect(true);
+      } else {
+        email.setStartTLSEnabled(true);
+      }
+
+      // Set UTF-8 encoding for proper character support
+      email.setCharset("UTF-8");
+      
+      email.setFrom(username);
+      email.setSubject(subject);
+      email.setHtmlMsg(htmlContent);
+      email.addTo(to);
+      email.send();
+
+      log.info("Report notification email sent successfully to {}", to);
+    } catch (EmailException e) {
+      log.error("Error sending report notification email to {}: {}", to, e.getMessage(), e);
+      // Don't throw exception to avoid breaking the main flow
     }
   }
 

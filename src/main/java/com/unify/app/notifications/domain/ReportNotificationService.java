@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class ReportNotificationService {
 
   private final NotificationService notificationService;
+  private final ReportEmailService reportEmailService;
 
   /**
    * Send notification when a report is approved
@@ -56,6 +57,8 @@ public class ReportNotificationService {
           generateLinkForEntity(entityType, entityId),
           notificationData);
 
+      // Send email notification to the reported user
+      // Note: We need to get the User object to access email, this will be handled in ReportService
       log.info(
           "Report approved notification sent: type={}, entityId={}, reportedUser={}, adminReason={}",
           entityType,

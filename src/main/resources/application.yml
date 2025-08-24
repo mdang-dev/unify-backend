@@ -131,5 +131,5 @@ unify:
   livekit-api-key: ${LIVEKIT_API_KEY:default}
   livekit-api-secret: ${LIVEKIT_API_SECRET:default}
   livekit-ws-url: ${LIVEKIT_URL:ws://localhost:7880}
-  app-uri: ${APP_URI:https://unifyapp.com}
+  app-uri: ${APP_URI:http://localhost:3000}
   token-cleanup-job-cron: "0 2 * * *"
