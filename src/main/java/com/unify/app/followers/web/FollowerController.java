@@ -1,6 +1,8 @@
 package com.unify.app.followers.web;
 
 import com.unify.app.followers.domain.FollowService;
+import com.unify.app.users.domain.User;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -65,5 +67,17 @@ class FollowerController {
       @PathVariable String userId1, @PathVariable String userId2) {
     boolean isFriend = followService.isFriend(userId1, userId2);
     return ResponseEntity.ok(isFriend);
+  }
+
+  @GetMapping("/friends/{userId}")
+  public ResponseEntity<Long> countFriends(@PathVariable String userId) {
+    long count = followService.countFriends(userId);
+    return ResponseEntity.ok(count);
+  }
+
+  @GetMapping("/friends-list/{userId}")
+  public ResponseEntity<List<User>> getFriendsList(@PathVariable String userId) {
+    List<User> friends = followService.getFriends(userId);
+    return ResponseEntity.ok(friends);
   }
 }

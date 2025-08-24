@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Report Approved</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f6f8fa; margin: 0; padding: 0; }
+        .container { max-width: 520px; margin: 24px auto; background: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); overflow: hidden; }
+        .header { background: #dc3545; color: #ffffff; padding: 16px 24px; font-size: 18px; font-weight: 600; }
+        .content { padding: 24px; color: #24292e; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 16px; margin: 16px 0; }
+        .footer { padding: 16px 24px; color: #6a737d; font-size: 12px; border-top: 1px solid #f0f1f3; }
+        .button { display: inline-block; background: #0d6efd; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Report Approved - Action Required</div>
+        <div class="content">
+            <p>Dear ${USER_NAME},</p>
+            <p>A report regarding your ${ENTITY_TYPE} has been reviewed and approved by our moderation team.</p>
+
+            <div class="warning">
+                <strong>Admin Reason:</strong><br>
+                ${ADMIN_REASON}
+            </div>
+
+            <p>Please review your content and ensure it complies with our community guidelines. You can access your account at:</p>
+
+            <a href="${FRONTEND_URL}" class="button">Access Platform</a>
+
+            <p>If you have any questions or believe this decision was made in error, please contact our support team.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; ${YEAR} Unify. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

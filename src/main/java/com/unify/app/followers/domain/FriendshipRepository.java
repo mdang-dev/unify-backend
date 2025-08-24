@@ -10,4 +10,8 @@ interface FriendshipRepository extends JpaRepository<Friendship, FriendshipUserI
   @Query(
       "SELECT COUNT(f) > 0 FROM Friendship f WHERE ((f.user.id = :userId1 AND f.friend.id = :userId2) OR (f.user.id = :userId2 AND f.friend.id = :userId1)) AND f.friendshipStatus = com.unify.app.followers.domain.models.FriendshipStatus.ACCEPTED")
   boolean areFriends(@Param("userId1") String userId1, @Param("userId2") String userId2);
+
+  @Query(
+      "SELECT COUNT(f) FROM Friendship f WHERE (f.user.id = :userId OR f.friend.id = :userId) AND f.friendshipStatus = com.unify.app.followers.domain.models.FriendshipStatus.ACCEPTED")
+  long countFriendsByUserId(@Param("userId") String userId);
 }

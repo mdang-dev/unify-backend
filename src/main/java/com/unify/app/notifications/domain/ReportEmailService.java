@@ -3,11 +3,17 @@ package com.unify.app.notifications.domain;
 import com.unify.app.reports.domain.models.EntityType;
 import com.unify.app.users.domain.User;
 import com.unify.app.users.domain.mail.ApacheMailService;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +28,8 @@ public class ReportEmailService {
 
   private final ApacheMailService apacheMailService;
 
-  @Value("${unify.app-uri:http://localhost:3000}")
+  // @Value("${unify.local-url:http://localhost:3000}")
+  @Value("${unify.app-uri:https://unify.qzz.io}")
   private String frontendUrl;
 
   /**
@@ -168,8 +175,42 @@ public class ReportEmailService {
   }
 
   private String loadReportApprovedEmailTemplate(EntityType entityType) {
-    // For now, return a simple inline template
-    // In production, you might want to load from external files
+    return loadEmailTemplate("templates/report-approved-email.html");
+  }
+
+  private String loadAccountSuspendedEmailTemplate() {
+    return loadEmailTemplate("templates/account-suspended-email.html");
+  }
+
+  private String loadAccountBannedEmailTemplate() {
+    return loadEmailTemplate("templates/account-banned-email.html");
+  }
+
+  private String loadEmailTemplate(String filePath) {
+    try (InputStreamReader reader =
+        new InputStreamReader(
+            new ClassPathResource(filePath).getInputStream(), StandardCharsets.UTF_8)) {
+      return new BufferedReader(reader).lines().collect(Collectors.joining("\n"));
+    } catch (IOException e) {
+      log.error("Unable to load template {}!", filePath, e);
+      // Fallback to inline template if file loading fails
+      return getFallbackTemplate(filePath);
+    }
+  }
+
+  private String getFallbackTemplate(String filePath) {
+    // Return appropriate fallback template based on filePath
+    if (filePath.contains("report-approved")) {
+      return getReportApprovedFallbackTemplate();
+    } else if (filePath.contains("account-suspended")) {
+      return getAccountSuspendedFallbackTemplate();
+    } else if (filePath.contains("account-banned")) {
+      return getAccountBannedFallbackTemplate();
+    }
+    return "Template not found";
+  }
+
+  private String getReportApprovedFallbackTemplate() {
     return """
             <!DOCTYPE html>
             <html lang="en">
@@ -214,7 +255,7 @@ public class ReportEmailService {
             """;
   }
 
-  private String loadAccountSuspendedEmailTemplate() {
+  private String getAccountSuspendedFallbackTemplate() {
     return """
             <!DOCTYPE html>
             <html lang="en">
@@ -258,7 +299,7 @@ public class ReportEmailService {
             """;
   }
 
-  private String loadAccountBannedEmailTemplate() {
+  private String getAccountBannedFallbackTemplate() {
     return """
             <!DOCTYPE html>
             <html lang="en">
